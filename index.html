@@ -1,0 +1,1065 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+    <title>ZedMatch — Meet Someone Real in Zambia 🇿🇲💘</title>
+    <meta name="description" content="ZedMatch — Zambia's own dating app. Swipe, match and chat with real, verified people near you. Free to start. Pay with MTN MoMo, Airtel Money or Zamtel Kwacha.">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#e11d48">
+    <link rel="icon" type="image/png" href="icon-192.png">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="ZedMatch">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Playfair+Display:wght@600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        rose: {
+                            50: '#fff1f2', 100: '#ffe4e6', 200: '#fecdd3', 400: '#fb7185',
+                            500: '#f43f5e', 600: '#e11d48', 700: '#be123c', 900: '#881337'
+                        },
+                        gold: { DEFAULT: '#e3ae4e', soft: '#f4d58d', deep: '#b8862f' },
+                        zam: { green: '#198a00', red: '#de2010', black: '#000000', orange: '#ef7d00' }
+                    },
+                    fontFamily: { sans: ['Inter', 'sans-serif'], display: ['"Playfair Display"', 'serif'] }
+                }
+            }
+        }
+    </script>
+    <style>
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        .spinner { border: 3px solid #ffe4e6; border-top-color: #e11d48; border-radius: 50%; width: 40px; height: 40px; animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        html, body { overscroll-behavior: none; }
+        body { -webkit-tap-highlight-color: transparent; }
+    </style>
+</head>
+<body class="bg-rose-50 font-sans text-slate-800 min-h-screen">
+
+    <!-- ═══ ORIZIS INTRO · standalone module ═══ -->
+    <div id="orizis-intro">
+      <style>
+        #orizis-intro { position: fixed; inset: 0; z-index: 999999; background: #0d0510; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: opacity 0.45s ease; }
+        #orizis-intro.oi-out { opacity: 0; pointer-events: none; }
+        #orizis-intro .oi-mark { font-family: 'Playfair Display', Georgia, serif; font-weight: 900; font-size: clamp(38px, 9vw, 72px); letter-spacing: 0.22em; margin-right: -0.22em; background: linear-gradient(100deg, #881337 0%, #ffe4e6 28%, #e3ae4e 50%, #ffe4e6 72%, #881337 100%); background-size: 240% auto; -webkit-background-clip: text; background-clip: text; color: transparent; opacity: 0; animation: oiShine 1.9s ease forwards, oiRise 0.9s cubic-bezier(0.22,1,0.36,1) forwards; }
+        #orizis-intro .oi-sub { font-family: 'Inter', Arial, sans-serif; font-weight: 700; font-size: clamp(10px, 2.2vw, 14px); letter-spacing: 0.55em; margin-right: -0.55em; color: #9d5b7e; margin-top: 14px; opacity: 0; animation: oiFade 0.7s ease 0.55s forwards; }
+        #orizis-intro .oi-line { width: 0; height: 1px; background: linear-gradient(90deg, transparent, #e3ae4e, transparent); margin-top: 22px; animation: oiLine 1.1s ease 0.35s forwards; }
+        #orizis-intro .oi-load { display: flex; align-items: center; gap: 8px; margin-top: 26px; color: #9d5b7e; font-family: 'Inter', Arial, sans-serif; font-weight: 600; font-size: 11px; letter-spacing: 0.2em; opacity: 0; animation: oiFade 0.7s ease 0.9s forwards; }
+        #orizis-intro .oi-spin { width: 14px; height: 14px; border: 2px solid rgba(227,174,78,0.25); border-top-color: #e3ae4e; border-radius: 50%; animation: oiSpin 0.9s linear infinite; }
+        @keyframes oiSpin { to { transform: rotate(360deg); } }
+        @keyframes oiShine { from { background-position: 200% center; } to { background-position: -40% center; } }
+        @keyframes oiRise { from { opacity: 0; transform: translateY(14px) scale(0.97); } to { opacity: 1; transform: none; } }
+        @keyframes oiFade { to { opacity: 1; } }
+        @keyframes oiLine { to { width: min(320px, 60vw); } }
+      </style>
+      <div class="oi-mark">ORIZIS</div>
+      <div class="oi-line"></div>
+      <div class="oi-sub">TECHNOLOGY</div>
+      <div class="oi-load"><div class="oi-spin"></div>LOADING</div>
+      <script>
+        (function () {
+          var el = document.getElementById('orizis-intro');
+          var done = false;
+          function out() { if (done) return; done = true; el.classList.add('oi-out'); setTimeout(function () { el.remove(); }, 500); }
+          el.addEventListener('click', out);
+          el.addEventListener('touchstart', out, { passive: true });
+          setTimeout(out, 1300);
+        })();
+      </script>
+    </div>
+    <!-- ═══ /ORIZIS INTRO ═══ -->
+
+    <!-- App mounts here -->
+    <div id="app" class="max-w-md mx-auto min-h-screen bg-white relative shadow-xl overflow-hidden"></div>
+
+    <!-- ======================= TOAST ======================= -->
+    <div id="toast" class="fixed bottom-24 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-sm font-semibold px-5 py-3 rounded-full shadow-xl z-[70] hidden text-center max-w-[90%]"></div>
+
+<style>
+    .swipe-card { touch-action: pan-y; will-change: transform; }
+    .stamp { position: absolute; top: 34px; padding: 6px 16px; border: 4px solid; border-radius: 12px; font-weight: 900; font-size: 28px; letter-spacing: 2px; text-transform: uppercase; opacity: 0; transform: rotate(-14deg); pointer-events: none; }
+    .stamp-like { left: 20px; color: #22c55e; border-color: #22c55e; transform: rotate(-18deg); }
+    .stamp-nope { right: 20px; color: #ef4444; border-color: #ef4444; transform: rotate(18deg); }
+    .stamp-super { left: 50%; top: auto; bottom: 90px; transform: translateX(-50%) rotate(-8deg); color: #3b82f6; border-color: #3b82f6; }
+    .interest-chip { display: inline-flex; align-items: center; gap: 5px; background: rgba(255,255,255,.16); backdrop-filter: blur(4px); border: 1px solid rgba(255,255,255,.25); color: #fff; border-radius: 9999px; padding: 4px 11px; font-size: 12px; font-weight: 600; }
+    .tab-btn { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 0 6px; color: #94a3b8; font-size: 10px; font-weight: 700; transition: color .15s; }
+    .tab-btn.active { color: #e11d48; }
+    .tab-btn i { font-size: 20px; }
+    .pref-chip { padding: 7px 16px; border-radius: 9999px; border: 2px solid #fecdd3; font-weight: 700; font-size: 13px; color: #be123c; transition: all .15s; cursor: pointer; }
+    .pref-chip.on { background: #e11d48; color: #fff; border-color: #e11d48; }
+    .msg-in { background: #f1f5f9; color: #0f172a; border-radius: 18px 18px 18px 4px; }
+    .msg-out { background: linear-gradient(135deg,#f43f5e,#e11d48); color: #fff; border-radius: 18px 18px 4px 18px; }
+    @keyframes heartPop { 0%{transform:scale(0);opacity:0} 50%{transform:scale(1.25);opacity:1} 100%{transform:scale(1);opacity:1} }
+    .heart-pop { animation: heartPop .5s cubic-bezier(.22,1,.36,1) forwards; }
+    @keyframes floatUp { from{transform:translateY(0);opacity:.9} to{transform:translateY(-120px);opacity:0} }
+</style>
+
+<script>
+/* ================================================================
+   ZEDMATCH CONFIG — edit these values
+   ================================================================ */
+const CONFIG = {
+    APP_NAME: "ZedMatch",
+    // Backend (Vercel server.js) that runs pawaPay Mobile Money.
+    // Leave "" to force full DEMO mode (payments simulated locally).
+    API_BASE_URL: "",
+
+    // Support contact (business number — never a private phone).
+    WHATSAPP_SUPPORT: "260971234567",
+
+    // Pilot cities — launch hyper-local. Keep this short at first (one city).
+    CITIES: ["Lusaka", "Ndola", "Kitwe", "Livingstone", "Kabwe", "Chingola"],
+
+    MIN_AGE: 18,
+
+    // Free tier limit — number of right-swipes (likes) per day before paywall.
+    FREE_SWIPES_PER_DAY: 15,
+
+    // Prices in Zambian Kwacha (ZMW). Paid features unlock ONLY after a
+    // server-verified payment (see unlockAfterPayment()).
+    PRICES: {
+        premium_month: 79,   // ZedMatch Premium — 30 days
+        who_liked:     29,   // see everyone who liked you
+        boost:         19,   // 30-min boost, be seen first
+        superlike_5:   15    // pack of 5 Super Likes
+    },
+
+    // Admin access: profiles whose id/email is listed here see the moderation queue.
+    // In production, enforce this with Firestore rules + custom claims, NOT just here.
+    ADMIN_IDS: ["admin"]
+};
+
+/* ================================================================
+   FIREBASE (optional) — fill in to go live with real accounts.
+   While these stay blank, ZedMatch runs in DEMO mode using
+   localStorage + seeded profiles, so the whole flow is testable.
+   ================================================================ */
+const FIREBASE_CONFIG = {
+    apiKey: "",
+    authDomain: "",
+    projectId: "",
+    storageBucket: "",
+    messagingSenderId: "",
+    appId: ""
+};
+const FIREBASE_ON = false; // set true after filling FIREBASE_CONFIG (see SETUP.md)
+
+/* ================================================================
+   SEED PROFILES — used in DEMO mode so the swipe deck isn't empty.
+   These are illustrative demo personas, not real people.
+   ================================================================ */
+const SEED = [
+    { id:'s1', name:'Chanda', age:24, gender:'f', city:'Lusaka', verified:true, bio:'Nurse who loves nshima, gospel music and long drives. Looking for something real. 🙏', interests:['Music','Cooking','Church','Travel'], likesYou:true, photos:['https://picsum.photos/seed/zm-cf1/600/800','https://picsum.photos/seed/zm-cf1b/600/800'] },
+    { id:'s2', name:'Mutinta', age:27, gender:'f', city:'Lusaka', verified:true, bio:'Entrepreneur. I run a small salon in Kabulonga. Coffee, ambition and good vibes.', interests:['Business','Coffee','Fashion','Gym'], likesYou:false, photos:['https://picsum.photos/seed/zm-cf2/600/800'] },
+    { id:'s3', name:'Natasha', age:22, gender:'f', city:'Ndola', verified:false, bio:'UNZA student 📚. Netball on weekends. Make me laugh and you win.', interests:['Netball','Movies','Reading'], likesYou:true, photos:['https://picsum.photos/seed/zm-cf3/600/800'] },
+    { id:'s4', name:'Bupe', age:29, gender:'f', city:'Kitwe', verified:true, bio:'Accountant, foodie, and a proud auntie. No games, just genuine connection.', interests:['Food','Family','Music','Travel'], likesYou:false, photos:['https://picsum.photos/seed/zm-cf4/600/800'] },
+    { id:'s5', name:'Temwani', age:25, gender:'f', city:'Lusaka', verified:true, bio:'Teacher 🍎 Love sunsets at Kalimba, hiking and afrobeats.', interests:['Teaching','Hiking','Afrobeats','Nature'], likesYou:true, photos:['https://picsum.photos/seed/zm-cf5/600/800'] },
+    { id:'m1', name:'Mwamba', age:28, gender:'m', city:'Lusaka', verified:true, bio:'Engineer at heart, footballer on weekends ⚽. Family man in the making.', interests:['Football','Cars','Tech','Family'], likesYou:true, photos:['https://picsum.photos/seed/zm-cm1/600/800'] },
+    { id:'m2', name:'Kunda', age:31, gender:'m', city:'Lusaka', verified:true, bio:'Doctor. I value honesty, faith and a good sense of humour. Let\'s talk.', interests:['Medicine','Church','Reading','Chess'], likesYou:false, photos:['https://picsum.photos/seed/zm-cm2/600/800'] },
+    { id:'m3', name:'Chibwe', age:26, gender:'m', city:'Ndola', verified:false, bio:'Music producer 🎧 Copperbelt born. Ambitious and loyal.', interests:['Music','Production','Gym','Travel'], likesYou:true, photos:['https://picsum.photos/seed/zm-cm3/600/800'] },
+    { id:'m4', name:'Lubinda', age:30, gender:'m', city:'Livingstone', verified:true, bio:'Tour guide by the Falls 🌊 Adventurous, calm, and a great cook.', interests:['Adventure','Cooking','Nature','Photography'], likesYou:false, photos:['https://picsum.photos/seed/zm-cm4/600/800'] },
+    { id:'m5', name:'Taonga', age:27, gender:'m', city:'Kitwe', verified:true, bio:'Banker who loves braais, church and a good conversation. Serious dating only.', interests:['Finance','Braai','Church','Fitness'], likesYou:true, photos:['https://picsum.photos/seed/zm-cm5/600/800'] }
+];
+
+const INTEREST_OPTIONS = ['Music','Movies','Travel','Cooking','Church','Gym','Football','Netball','Fashion','Business','Reading','Photography','Nature','Coffee','Family','Afrobeats','Gospel','Dancing','Food','Tech'];
+
+/* ================================================================
+   STATE + STORAGE
+   ================================================================ */
+const $ = id => document.getElementById(id);
+const app = $('app');
+let me = null;                 // current user profile
+let pool = [];                 // swipe candidates
+let deckIndex = 0;
+let matches = [];              // [{id, profile, messages:[{from,text,at}]}]
+let reports = [];              // moderation queue (demo/local)
+let activeTab = 'discover';
+let activeChatId = null;
+
+const DB = {
+    load(k, d) { try { return JSON.parse(localStorage.getItem('zedmatch_' + k)) ?? d; } catch { return d; } },
+    save(k, v) { localStorage.setItem('zedmatch_' + k, JSON.stringify(v)); }
+};
+
+function todayStr() {
+    // Local date key for the daily free-swipe reset
+    const d = new Date();
+    return d.getFullYear() + '-' + (d.getMonth()+1) + '-' + d.getDate();
+}
+
+function freshUser() {
+    return {
+        id: 'me_' + Math.random().toString(36).slice(2, 9),
+        name: '', age: null, gender: '', seeking: '', city: CONFIG.CITIES[0],
+        bio: '', interests: [], photos: [], selfie: null,
+        verified: false, verifyStatus: 'none', // none | pending | approved | rejected
+        premium: false, premiumUntil: 0,
+        superLikes: 1, boostUntil: 0,
+        swipesToday: 0, swipeDate: todayStr(),
+        likedIds: [], passedIds: [], superLikedIds: [], blockedIds: [],
+        ageConfirmed: false, agreedTerms: false
+    };
+}
+
+function showToast(msg, ms) {
+    const t = $('toast');
+    t.innerHTML = msg;
+    t.classList.remove('hidden');
+    clearTimeout(t._t);
+    t._t = setTimeout(() => t.classList.add('hidden'), ms || 2600);
+}
+
+/* ================================================================
+   BOOT
+   ================================================================ */
+function boot() {
+    me = DB.load('me', null);
+    matches = DB.load('matches', []);
+    reports = DB.load('reports', []);
+
+    // Daily free-swipe reset
+    if (me && me.swipeDate !== todayStr()) { me.swipeDate = todayStr(); me.swipesToday = 0; saveMe(); }
+    // Premium expiry
+    if (me && me.premium && me.premiumUntil && Date.now() > me.premiumUntil) { me.premium = false; saveMe(); }
+
+    if (!me || !me.ageConfirmed) return renderAgeGate();
+    if (!me.name || !me.gender || !me.photos.length) return renderOnboarding();
+    renderHome();
+}
+function saveMe() { DB.save('me', me); }
+function saveMatches() { DB.save('matches', matches); }
+function saveReports() { DB.save('reports', reports); }
+
+/* ================================================================
+   1) AGE GATE (18+) — legal / safety requirement
+   ================================================================ */
+function renderAgeGate() {
+    app.innerHTML = `
+    <div class="min-h-screen flex flex-col items-center justify-center px-7 text-center bg-gradient-to-br from-rose-600 via-rose-700 to-[#3b0618] text-white">
+        <div class="text-6xl heart-pop"><i class="fas fa-heart"></i></div>
+        <h1 class="mt-5 text-4xl font-display font-extrabold">Zed<span class="text-gold-soft">Match</span></h1>
+        <p class="mt-2 text-rose-100/90 text-sm">Meet someone real in Zambia 🇿🇲</p>
+
+        <div class="mt-10 bg-white/10 backdrop-blur border border-white/15 rounded-2xl p-6 w-full">
+            <div class="text-3xl text-gold-soft"><i class="fas fa-shield-halved"></i></div>
+            <h2 class="mt-3 font-extrabold text-lg">Are you 18 or older?</h2>
+            <p class="mt-2 text-rose-100/80 text-sm">ZedMatch is strictly for adults. You must be at least ${CONFIG.MIN_AGE} to use this app.</p>
+            <button onclick="confirmAge()" class="mt-5 w-full bg-white text-rose-700 font-extrabold py-3.5 rounded-full hover:bg-rose-50 transition">Yes, I'm 18 or older</button>
+            <button onclick="denyAge()" class="mt-2 w-full text-rose-100/80 text-sm py-2 hover:text-white">No, I'm under 18</button>
+        </div>
+        <p class="mt-6 text-[11px] text-rose-100/60 leading-relaxed max-w-xs">By continuing you agree to our <b>Terms</b> &amp; <b>Community Rules</b> and confirm your details are truthful. Fake or underage profiles are removed.</p>
+        <p class="mt-3 text-[10px] text-rose-100/40">an ORIZIS TECHNOLOGY product</p>
+    </div>`;
+}
+function confirmAge() {
+    if (!me) me = freshUser();
+    me.ageConfirmed = true; me.agreedTerms = true; saveMe();
+    renderOnboarding();
+}
+function denyAge() {
+    app.innerHTML = `<div class="min-h-screen flex flex-col items-center justify-center px-8 text-center bg-slate-900 text-white">
+        <div class="text-5xl text-rose-400"><i class="fas fa-circle-info"></i></div>
+        <h2 class="mt-4 font-bold text-xl">Sorry — you must be 18+</h2>
+        <p class="mt-2 text-slate-400 text-sm">ZedMatch is an adults-only dating app. Please come back when you're 18.</p>
+    </div>`;
+}
+
+/* ================================================================
+   2) ONBOARDING — build profile + selfie verification
+   ================================================================ */
+let onbStep = 0;
+function renderOnboarding() {
+    if (!me) me = freshUser();
+    const steps = [onbBasics, onbPhotos, onbAbout, onbVerify];
+    onbStep = Math.min(onbStep, steps.length - 1);
+    steps[onbStep]();
+}
+function onbShell(title, sub, body, footer) {
+    app.innerHTML = `
+    <div class="min-h-screen flex flex-col bg-white">
+        <div class="px-6 pt-8 pb-4">
+            <div class="flex gap-1.5 mb-6">
+                ${[0,1,2,3].map(i => `<div class="h-1.5 flex-1 rounded-full ${i<=onbStep?'bg-rose-600':'bg-rose-100'}"></div>`).join('')}
+            </div>
+            <h1 class="text-2xl font-display font-extrabold">${title}</h1>
+            <p class="text-slate-500 text-sm mt-1">${sub}</p>
+        </div>
+        <div class="flex-1 overflow-y-auto px-6 no-scrollbar">${body}</div>
+        <div class="p-6 border-t bg-white">${footer}</div>
+    </div>`;
+}
+function onbBasics() {
+    onbShell('First, the basics', 'This is how you\'ll appear on ZedMatch.',
+    `<div class="space-y-5 pb-4">
+        <div>
+            <label class="text-sm font-bold text-slate-600 block mb-1.5">Your first name</label>
+            <input id="onbName" value="${me.name||''}" placeholder="e.g. Chanda" maxlength="20" class="w-full border-2 border-rose-100 focus:border-rose-500 rounded-xl px-4 py-3 outline-none">
+        </div>
+        <div>
+            <label class="text-sm font-bold text-slate-600 block mb-1.5">Your age</label>
+            <input id="onbAge" value="${me.age||''}" type="number" min="18" max="99" placeholder="18+" class="w-full border-2 border-rose-100 focus:border-rose-500 rounded-xl px-4 py-3 outline-none" oninput="this.value=this.value.slice(0,2)">
+        </div>
+        <div>
+            <label class="text-sm font-bold text-slate-600 block mb-2">I am a</label>
+            <div class="flex gap-2">
+                <div class="pref-chip flex-1 text-center ${me.gender==='m'?'on':''}" onclick="setGender('m')"><i class="fas fa-mars mr-1"></i>Man</div>
+                <div class="pref-chip flex-1 text-center ${me.gender==='f'?'on':''}" onclick="setGender('f')"><i class="fas fa-venus mr-1"></i>Woman</div>
+            </div>
+        </div>
+        <div>
+            <label class="text-sm font-bold text-slate-600 block mb-2">Your city</label>
+            <select id="onbCity" class="w-full border-2 border-rose-100 focus:border-rose-500 rounded-xl px-4 py-3 outline-none bg-white">
+                ${CONFIG.CITIES.map(c => `<option ${me.city===c?'selected':''}>${c}</option>`).join('')}
+            </select>
+            <p class="text-[11px] text-slate-400 mt-1.5"><i class="fas fa-lock mr-1"></i>Only your city is ever shown — never your exact location.</p>
+        </div>
+    </div>`,
+    `<button onclick="saveBasics()" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-extrabold py-3.5 rounded-full transition">Continue</button>`);
+}
+function setGender(g) { me.gender = g; me.seeking = g === 'm' ? 'f' : 'm'; onbBasics(); }
+function saveBasics() {
+    const name = $('onbName').value.trim();
+    const age = parseInt($('onbAge').value);
+    if (!name) return showToast('Please enter your name');
+    if (!age || age < CONFIG.MIN_AGE) return showToast('You must be 18 or older');
+    if (!me.gender) return showToast('Please select if you are a man or woman');
+    me.name = name; me.age = age; me.city = $('onbCity').value;
+    // Hetero-only pilot: seeking is the opposite gender (set in setGender)
+    me.seeking = me.gender === 'm' ? 'f' : 'm';
+    saveMe(); onbStep = 1; renderOnboarding();
+}
+function onbPhotos() {
+    onbShell('Add your photos', 'Real, clear photos get 3× more matches. Add at least one.',
+    `<div class="grid grid-cols-3 gap-3 pb-4">
+        ${[0,1,2,3,4,5].map(i => {
+            const p = me.photos[i];
+            return p
+              ? `<div class="relative aspect-[3/4] rounded-xl overflow-hidden bg-rose-50">
+                   <img src="${p}" class="w-full h-full object-cover">
+                   <button onclick="removePhoto(${i})" class="absolute top-1 right-1 bg-black/60 text-white w-6 h-6 rounded-full text-xs"><i class="fas fa-xmark"></i></button>
+                 </div>`
+              : `<button onclick="addPhoto()" class="aspect-[3/4] rounded-xl border-2 border-dashed border-rose-200 text-rose-300 flex items-center justify-center hover:border-rose-400 hover:text-rose-400"><i class="fas fa-plus text-xl"></i></button>`;
+        }).join('')}
+    </div>
+    <p class="text-[11px] text-slate-400"><i class="fas fa-circle-info mr-1"></i>Demo mode uses sample images. On the live app you'll upload from your phone.</p>`,
+    `<button onclick="savePhotos()" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-extrabold py-3.5 rounded-full transition">Continue</button>`);
+}
+function addPhoto() {
+    if (me.photos.length >= 6) return;
+    // DEMO: seed a sample image. LIVE: replace with Firebase Storage upload.
+    const seed = 'zm-me-' + me.id + '-' + me.photos.length + '-' + Math.floor(Math.random()*9999);
+    me.photos.push('https://picsum.photos/seed/' + seed + '/600/800');
+    saveMe(); onbPhotos();
+}
+function removePhoto(i) { me.photos.splice(i,1); saveMe(); onbPhotos(); }
+function savePhotos() {
+    if (!me.photos.length) return showToast('Add at least one photo');
+    saveMe(); onbStep = 2; renderOnboarding();
+}
+function onbAbout() {
+    onbShell('Tell us about you', 'A short bio and your interests help you match with the right people.',
+    `<div class="space-y-5 pb-4">
+        <div>
+            <label class="text-sm font-bold text-slate-600 block mb-1.5">Your bio</label>
+            <textarea id="onbBio" rows="3" maxlength="200" placeholder="Say something real about yourself..." class="w-full border-2 border-rose-100 focus:border-rose-500 rounded-xl px-4 py-3 outline-none resize-none">${me.bio||''}</textarea>
+        </div>
+        <div>
+            <label class="text-sm font-bold text-slate-600 block mb-2">Your interests <span class="text-slate-400 font-normal">(pick a few)</span></label>
+            <div id="onbInterests" class="flex flex-wrap gap-2">
+                ${INTEREST_OPTIONS.map(x => `<span class="pref-chip ${me.interests.includes(x)?'on':''}" onclick="toggleInterest('${x}')">${x}</span>`).join('')}
+            </div>
+        </div>
+    </div>`,
+    `<button onclick="saveAbout()" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-extrabold py-3.5 rounded-full transition">Continue</button>`);
+}
+function toggleInterest(x) {
+    const i = me.interests.indexOf(x);
+    if (i >= 0) me.interests.splice(i,1);
+    else { if (me.interests.length >= 6) return showToast('Up to 6 interests'); me.interests.push(x); }
+    // Re-render just the chips
+    const bio = $('onbBio'); if (bio) me.bio = bio.value;
+    onbAbout();
+}
+function saveAbout() {
+    me.bio = $('onbBio').value.trim();
+    saveMe(); onbStep = 3; renderOnboarding();
+}
+function onbVerify() {
+    const st = me.verifyStatus;
+    onbShell('Get verified ✓', 'Verification keeps ZedMatch safe and cuts fake profiles. Take a quick selfie.',
+    `<div class="pb-4 text-center">
+        <div class="mx-auto w-40 h-40 rounded-full border-4 ${st==='pending'||st==='approved'?'border-green-400':'border-rose-200 border-dashed'} flex items-center justify-center bg-rose-50 overflow-hidden">
+            ${me.selfie ? `<img src="${me.selfie}" class="w-full h-full object-cover">` : `<i class="fas fa-camera text-4xl text-rose-300"></i>`}
+        </div>
+        ${st==='pending' ? `<p class="mt-4 text-green-600 font-bold text-sm"><i class="fas fa-clock mr-1"></i>Selfie submitted — pending review</p>`
+          : st==='approved' ? `<p class="mt-4 text-green-600 font-bold text-sm"><i class="fas fa-circle-check mr-1"></i>Verified</p>`
+          : `<button onclick="takeSelfie()" class="mt-5 bg-rose-600 hover:bg-rose-700 text-white font-bold px-6 py-3 rounded-full"><i class="fas fa-camera mr-1"></i>Take verification selfie</button>`}
+        <div class="mt-6 text-left bg-rose-50 rounded-xl p-4 text-xs text-slate-500 space-y-2">
+            <p><i class="fas fa-shield-halved text-rose-500 mr-1.5"></i>Your selfie is only used to confirm you're a real person. It's never shown publicly.</p>
+            <p><i class="fas fa-user-lock text-rose-500 mr-1.5"></i>We never share your phone number with other users.</p>
+        </div>
+    </div>`,
+    `<button onclick="finishOnboarding()" class="w-full ${me.selfie?'bg-rose-600 hover:bg-rose-700':'bg-slate-200 text-slate-400'} text-white font-extrabold py-3.5 rounded-full transition">${me.selfie?'Start matching':'Skip for now'}</button>`);
+}
+function takeSelfie() {
+    // DEMO: simulate a selfie capture + queue for moderation.
+    me.selfie = 'https://picsum.photos/seed/selfie-' + me.id + '/300/300';
+    me.verifyStatus = 'pending';
+    saveMe();
+    reports.push({ type:'verification', userId: me.id, name: me.name, at: Date.now(), status:'pending' });
+    saveReports();
+    showToast('Selfie submitted for verification ✓');
+    onbVerify();
+}
+function finishOnboarding() {
+    saveMe();
+    buildPool();
+    renderHome();
+    setTimeout(() => showToast('Welcome to ZedMatch, ' + me.name + '! 💘', 3200), 400);
+}
+
+/* ================================================================
+   POOL / DISCOVERY  (hetero-only pilot: opposite gender only)
+   ================================================================ */
+function buildPool() {
+    const seen = new Set([...me.likedIds, ...me.passedIds, ...me.superLikedIds, ...me.blockedIds]);
+    pool = SEED.filter(p =>
+        p.gender === me.seeking &&        // enforce opposite-gender matching
+        p.gender !== me.gender &&
+        !seen.has(p.id)
+    );
+    // Boosted / verified users float up a bit
+    pool.sort((a,b) => (b.verified?1:0) - (a.verified?1:0));
+    deckIndex = 0;
+}
+
+/* ================================================================
+   HOME SHELL + TABS
+   ================================================================ */
+function renderHome() {
+    if (!pool.length && activeTab === 'discover') buildPool();
+    app.innerHTML = `
+    <div class="min-h-screen flex flex-col bg-rose-50">
+        <div id="screen" class="flex-1 flex flex-col overflow-hidden"></div>
+        <nav class="border-t bg-white flex px-2" style="padding-bottom:env(safe-area-inset-bottom)">
+            <button class="tab-btn ${activeTab==='discover'?'active':''}" onclick="switchTab('discover')"><i class="fas fa-fire"></i>Discover</button>
+            <button class="tab-btn ${activeTab==='likes'?'active':''}" onclick="switchTab('likes')"><i class="fas fa-star"></i>Likes</button>
+            <button class="tab-btn relative ${activeTab==='matches'?'active':''}" onclick="switchTab('matches')"><i class="fas fa-heart"></i>Matches${matches.length?`<span class="absolute top-1 right-1/4 bg-rose-600 text-white text-[9px] rounded-full w-4 h-4 flex items-center justify-center">${matches.length}</span>`:''}</button>
+            <button class="tab-btn ${activeTab==='profile'?'active':''}" onclick="switchTab('profile')"><i class="fas fa-user"></i>Profile</button>
+            ${CONFIG.ADMIN_IDS.includes(me.id)||me.id==='admin' ? `<button class="tab-btn ${activeTab==='admin'?'active':''}" onclick="switchTab('admin')"><i class="fas fa-shield-halved"></i>Admin</button>`:''}
+        </nav>
+    </div>`;
+    renderTab();
+}
+function switchTab(t) { activeTab = t; activeChatId = null; renderHome(); }
+function renderTab() {
+    const s = $('screen');
+    if (activeTab === 'discover') return renderDiscover(s);
+    if (activeTab === 'likes') return renderLikes(s);
+    if (activeTab === 'matches') return activeChatId ? renderChat(s) : renderMatches(s);
+    if (activeTab === 'profile') return renderProfile(s);
+    if (activeTab === 'admin') return renderAdmin(s);
+}
+
+/* ================================================================
+   DISCOVER — swipe deck
+   ================================================================ */
+function renderDiscover(s) {
+    const boosted = me.boostUntil > Date.now();
+    s.innerHTML = `
+    <header class="px-4 pt-4 pb-2 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+            <div class="bg-gradient-to-br from-rose-500 to-rose-700 text-white w-9 h-9 rounded-xl flex items-center justify-center shadow"><i class="fas fa-heart"></i></div>
+            <h1 class="text-xl font-display font-extrabold">Zed<span class="text-rose-600">Match</span></h1>
+        </div>
+        <div class="flex items-center gap-2">
+            ${boosted?`<span class="text-[10px] font-bold text-white bg-gradient-to-r from-purple-500 to-rose-500 px-2 py-1 rounded-full"><i class="fas fa-bolt"></i> Boosted</span>`:''}
+            <button onclick="openBoost()" class="text-purple-500 text-lg w-9 h-9"><i class="fas fa-bolt"></i></button>
+            <button onclick="openSafety()" class="text-slate-400 text-lg w-9 h-9"><i class="fas fa-shield-halved"></i></button>
+        </div>
+    </header>
+    <div class="px-4 text-[11px] text-slate-400 flex items-center justify-between -mt-1 mb-1">
+        <span><i class="fas fa-location-dot mr-1 text-rose-400"></i>${me.city} · people near you</span>
+        <span>${me.premium?'<b class="text-rose-600">Premium</b>':(CONFIG.FREE_SWIPES_PER_DAY - me.swipesToday) + ' free likes left'}</span>
+    </div>
+    <div id="deck" class="relative flex-1 mx-4 mb-2"></div>
+    <div class="flex items-center justify-center gap-4 pb-3">
+        <button onclick="swipeBtn('nope')" class="w-14 h-14 rounded-full bg-white shadow-lg border border-slate-100 text-red-500 text-2xl flex items-center justify-center active:scale-90 transition"><i class="fas fa-xmark"></i></button>
+        <button onclick="swipeBtn('super')" class="w-12 h-12 rounded-full bg-white shadow-lg border border-slate-100 text-blue-500 text-xl flex items-center justify-center active:scale-90 transition"><i class="fas fa-star"></i></button>
+        <button onclick="swipeBtn('like')" class="w-16 h-16 rounded-full bg-gradient-to-br from-rose-500 to-rose-600 shadow-xl text-white text-2xl flex items-center justify-center active:scale-90 transition"><i class="fas fa-heart"></i></button>
+    </div>`;
+    renderDeck();
+}
+function renderDeck() {
+    const deck = $('deck');
+    if (!deck) return;
+    const card = pool[deckIndex];
+    if (!card) {
+        deck.innerHTML = `<div class="absolute inset-0 flex flex-col items-center justify-center text-center px-8">
+            <div class="text-5xl text-rose-200"><i class="fas fa-heart-circle-check"></i></div>
+            <h3 class="mt-4 font-bold text-lg">You're all caught up!</h3>
+            <p class="text-slate-500 text-sm mt-1">No more people in ${me.city} right now. Check back soon, or Boost to reach more.</p>
+            <button onclick="openBoost()" class="mt-4 bg-gradient-to-r from-purple-500 to-rose-500 text-white font-bold px-6 py-2.5 rounded-full text-sm"><i class="fas fa-bolt mr-1"></i>Boost me</button>
+            <button onclick="resetDeckDemo()" class="mt-2 text-xs text-slate-400 underline">Reset demo deck</button>
+        </div>`;
+        return;
+    }
+    // Show current + next card behind
+    const next = pool[deckIndex+1];
+    deck.innerHTML =
+        (next ? cardHtml(next, true) : '') +
+        cardHtml(card, false);
+    attachSwipe(deck.querySelector('.swipe-card:last-child'), card);
+}
+function cardHtml(p, behind) {
+    return `
+    <div class="swipe-card absolute inset-0 rounded-3xl overflow-hidden shadow-2xl bg-slate-900 ${behind?'scale-[.96] translate-y-2':''}" data-id="${p.id}">
+        <img src="${p.photos[0]}" class="absolute inset-0 w-full h-full object-cover" onerror="this.src='https://picsum.photos/seed/fb${p.id}/600/800'">
+        <div class="absolute inset-0 bg-gradient-to-t from-black/85 via-black/10 to-black/25"></div>
+        <div class="stamp stamp-like">LIKE</div>
+        <div class="stamp stamp-nope">NOPE</div>
+        <div class="stamp stamp-super">SUPER</div>
+        <button onclick="openProfileCard('${p.id}')" class="absolute top-3 right-3 bg-black/40 text-white w-9 h-9 rounded-full text-sm z-10"><i class="fas fa-circle-info"></i></button>
+        <div class="absolute bottom-0 left-0 right-0 p-5 text-white">
+            <div class="flex items-end gap-2">
+                <h2 class="text-2xl font-extrabold">${p.name}, ${p.age}</h2>
+                ${p.verified?`<span class="text-blue-400 text-lg mb-0.5" title="Verified"><i class="fas fa-circle-check"></i></span>`:''}
+            </div>
+            <p class="text-white/80 text-sm mt-0.5"><i class="fas fa-location-dot mr-1"></i>${p.city}</p>
+            <p class="text-white/90 text-sm mt-2 line-clamp-2">${p.bio}</p>
+            <div class="flex flex-wrap gap-1.5 mt-3">${(p.interests||[]).slice(0,4).map(x=>`<span class="interest-chip">${x}</span>`).join('')}</div>
+        </div>
+    </div>`;
+}
+function attachSwipe(el, card) {
+    if (!el) return;
+    let startX=0, startY=0, dx=0, dy=0, dragging=false;
+    const like = el.querySelector('.stamp-like'), nope = el.querySelector('.stamp-nope');
+    const start = (x,y) => { dragging=true; startX=x; startY=y; el.style.transition='none'; };
+    const move = (x,y) => {
+        if (!dragging) return;
+        dx = x-startX; dy = y-startY;
+        el.style.transform = `translate(${dx}px, ${dy}px) rotate(${dx*0.06}deg)`;
+        if (like) like.style.opacity = Math.max(0, Math.min(1, dx/90));
+        if (nope) nope.style.opacity = Math.max(0, Math.min(1, -dx/90));
+    };
+    const end = () => {
+        if (!dragging) return; dragging=false;
+        el.style.transition='transform .3s ease';
+        if (dx > 100) { flyOut(el, 1); doSwipe(card, 'like'); }
+        else if (dx < -100) { flyOut(el, -1); doSwipe(card, 'nope'); }
+        else { el.style.transform=''; if(like)like.style.opacity=0; if(nope)nope.style.opacity=0; }
+    };
+    el.addEventListener('touchstart', e=>start(e.touches[0].clientX,e.touches[0].clientY), {passive:true});
+    el.addEventListener('touchmove', e=>move(e.touches[0].clientX,e.touches[0].clientY), {passive:true});
+    el.addEventListener('touchend', end);
+    el.addEventListener('mousedown', e=>start(e.clientX,e.clientY));
+    window.addEventListener('mousemove', e=>move(e.clientX,e.clientY));
+    window.addEventListener('mouseup', end);
+}
+function flyOut(el, dir) {
+    el.style.transition='transform .35s ease, opacity .35s ease';
+    el.style.transform = `translate(${dir*600}px, -40px) rotate(${dir*30}deg)`;
+    el.style.opacity = '0';
+}
+function swipeBtn(action) {
+    const card = pool[deckIndex];
+    if (!card) return;
+    const el = $('deck').querySelector('.swipe-card:last-child');
+    if (el) {
+        const stamp = el.querySelector(action==='like'?'.stamp-like':action==='nope'?'.stamp-nope':'.stamp-super');
+        if (stamp) stamp.style.opacity = '1';
+        flyOut(el, action==='nope'?-1:1);
+    }
+    doSwipe(card, action);
+}
+function doSwipe(card, action) {
+    // Free-swipe gate applies to right-swipes (like / super)
+    if ((action==='like'||action==='super') && !me.premium) {
+        if (me.swipesToday >= CONFIG.FREE_SWIPES_PER_DAY) {
+            // revert card position
+            renderDeck();
+            return openPaywall('swipes');
+        }
+    }
+    if (action==='super') {
+        if (me.superLikes <= 0 && !me.premium) { renderDeck(); return openPaywall('superlike'); }
+        if (!me.premium) me.superLikes--;
+        me.superLikedIds.push(card.id);
+    }
+    if (action==='like'||action==='super') { me.likedIds.push(card.id); me.swipesToday++; }
+    else me.passedIds.push(card.id);
+    saveMe();
+
+    const matched = (action==='like'||action==='super') && card.likesYou;
+    deckIndex++;
+    setTimeout(() => {
+        renderDeck();
+        // update the "likes left" counter
+        const t = $('screen'); if (t && activeTab==='discover') { /* light refresh */ }
+        renderDiscover($('screen'));
+        if (matched) showMatch(card);
+    }, 260);
+}
+function resetDeckDemo() {
+    me.likedIds=[]; me.passedIds=[]; me.superLikedIds=[]; saveMe();
+    buildPool(); renderDiscover($('screen'));
+}
+
+/* ================================================================
+   MATCH POPUP + create match
+   ================================================================ */
+function showMatch(card) {
+    if (matches.find(m=>m.profile.id===card.id)) return;
+    matches.unshift({ id:card.id, profile:card, messages:[], at:Date.now(), unread:false });
+    saveMatches();
+    const ov = document.createElement('div');
+    ov.className = 'fixed inset-0 z-[80] bg-gradient-to-br from-rose-600/95 to-[#3b0618]/95 flex flex-col items-center justify-center px-8 text-center text-white fade-in';
+    ov.innerHTML = `
+        <p class="font-display text-4xl font-extrabold heart-pop">It's a Match! 💘</p>
+        <p class="text-rose-100 mt-2">You and ${card.profile? '' : ''}${card.name} liked each other.</p>
+        <div class="flex items-center gap-3 mt-8">
+            <img src="${me.photos[0]}" class="w-24 h-24 rounded-full object-cover border-4 border-white">
+            <i class="fas fa-heart text-gold-soft text-2xl"></i>
+            <img src="${card.photos[0]}" class="w-24 h-24 rounded-full object-cover border-4 border-white">
+        </div>
+        <button onclick="this.closest('div').remove(); openChatWith('${card.id}')" class="mt-10 w-full max-w-xs bg-white text-rose-700 font-extrabold py-3.5 rounded-full">Send a message</button>
+        <button onclick="this.closest('div').remove()" class="mt-2 text-rose-100/80 text-sm py-2">Keep swiping</button>`;
+    document.body.appendChild(ov);
+}
+
+/* ================================================================
+   LIKES (Who liked you) — premium gated
+   ================================================================ */
+function renderLikes(s) {
+    const likers = SEED.filter(p => p.likesYou && p.gender===me.seeking && !me.blockedIds.includes(p.id) && !matches.find(m=>m.id===p.id));
+    const unlocked = me.premium || DB.load('whoLiked', false);
+    s.innerHTML = `
+    <header class="px-5 pt-5 pb-3"><h1 class="text-2xl font-display font-extrabold"><i class="fas fa-star text-gold mr-1"></i>Likes you</h1>
+        <p class="text-slate-500 text-sm">${likers.length} ${likers.length===1?'person likes':'people like'} you</p></header>
+    <div class="flex-1 overflow-y-auto px-4 pb-4 no-scrollbar">
+        ${likers.length===0 ? `<div class="text-center py-16 text-slate-400"><i class="fas fa-star text-4xl text-rose-100"></i><p class="mt-3 text-sm">No likes yet — keep an amazing profile!</p></div>` :
+        `<div class="grid grid-cols-2 gap-3">
+            ${likers.map(p => `
+            <div class="relative aspect-[3/4] rounded-2xl overflow-hidden shadow ${unlocked?'':'cursor-pointer'}" ${unlocked?`onclick="openProfileCard('${p.id}')"`:`onclick="openPaywall('wholiked')"`}>
+                <img src="${p.photos[0]}" class="w-full h-full object-cover ${unlocked?'':'blur-xl scale-110'}">
+                <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
+                <div class="absolute bottom-2 left-3 right-3 text-white">
+                    ${unlocked?`<p class="font-bold">${p.name}, ${p.age} ${p.verified?'<i class=\'fas fa-circle-check text-blue-400 text-xs\'></i>':''}</p><p class="text-[11px] text-white/70">${p.city}</p>`:`<p class="font-bold text-sm"><i class="fas fa-lock mr-1"></i>Liked you</p>`}
+                </div>
+            </div>`).join('')}
+        </div>
+        ${!unlocked?`<button onclick="openPaywall('wholiked')" class="mt-5 w-full bg-gradient-to-r from-rose-500 to-rose-600 text-white font-extrabold py-3.5 rounded-full shadow-lg"><i class="fas fa-eye mr-1"></i>See who likes you</button>`:''}`}
+    </div>`;
+}
+
+/* ================================================================
+   MATCHES + CHAT
+   ================================================================ */
+function renderMatches(s) {
+    s.innerHTML = `
+    <header class="px-5 pt-5 pb-3"><h1 class="text-2xl font-display font-extrabold"><i class="fas fa-heart text-rose-600 mr-1"></i>Matches</h1></header>
+    <div class="flex-1 overflow-y-auto no-scrollbar">
+        ${matches.length===0 ? `<div class="text-center py-16 text-slate-400 px-8"><i class="fas fa-heart-crack text-4xl text-rose-100"></i><p class="mt-3 text-sm">No matches yet. Head to Discover and start swiping!</p></div>` :
+        matches.map(m => {
+            const last = m.messages[m.messages.length-1];
+            return `<button onclick="openChatWith('${m.id}')" class="w-full flex items-center gap-3 px-5 py-3 hover:bg-rose-50 text-left border-b border-rose-50">
+                <img src="${m.profile.photos[0]}" class="w-14 h-14 rounded-full object-cover">
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-1.5"><span class="font-bold">${m.profile.name}</span>${m.profile.verified?'<i class="fas fa-circle-check text-blue-400 text-xs"></i>':''}</div>
+                    <p class="text-sm text-slate-500 truncate">${last ? (last.from==='me'?'You: ':'')+last.text : 'You matched — say hi! 👋'}</p>
+                </div>
+                ${m.unread?'<span class="w-2.5 h-2.5 bg-rose-600 rounded-full"></span>':''}
+            </button>`;
+        }).join('')}
+    </div>`;
+}
+function openChatWith(id) { activeTab='matches'; activeChatId=id; const m=matches.find(x=>x.id===id); if(m){m.unread=false;saveMatches();} renderHome(); }
+function renderChat(s) {
+    const m = matches.find(x=>x.id===activeChatId);
+    if (!m) { activeChatId=null; return renderMatches(s); }
+    s.innerHTML = `
+    <header class="px-3 pt-4 pb-3 flex items-center gap-2 border-b bg-white">
+        <button onclick="activeChatId=null;renderHome()" class="text-slate-500 w-9 h-9 text-lg"><i class="fas fa-chevron-left"></i></button>
+        <img src="${m.profile.photos[0]}" class="w-10 h-10 rounded-full object-cover">
+        <div class="flex-1"><div class="flex items-center gap-1.5 font-bold">${m.profile.name}${m.profile.verified?'<i class="fas fa-circle-check text-blue-400 text-xs"></i>':''}</div><p class="text-[11px] text-slate-400">${m.profile.city}</p></div>
+        <button onclick="reportUser('${m.id}')" class="text-slate-400 w-9 h-9 text-lg" title="Safety"><i class="fas fa-shield-halved"></i></button>
+    </header>
+    <div id="chatBody" class="flex-1 overflow-y-auto no-scrollbar p-4 space-y-2 bg-rose-50">
+        <div class="text-center text-[11px] text-slate-400 mb-2">
+            <img src="${m.profile.photos[0]}" class="w-16 h-16 rounded-full object-cover mx-auto mb-2">
+            You matched with ${m.profile.name}. Be kind and stay safe — never share money or personal details.
+        </div>
+        ${m.messages.map(msg => `
+            <div class="flex ${msg.from==='me'?'justify-end':'justify-start'}">
+                <div class="${msg.from==='me'?'msg-out':'msg-in'} px-4 py-2 max-w-[75%] text-sm">${msg.text}</div>
+            </div>`).join('')}
+    </div>
+    <div class="p-3 border-t bg-white flex items-center gap-2" style="padding-bottom:calc(env(safe-area-inset-bottom) + 12px)">
+        <input id="chatInput" placeholder="Type a message..." class="flex-1 bg-rose-50 rounded-full px-4 py-3 text-sm outline-none" onkeydown="if(event.key==='Enter')sendMsg()">
+        <button onclick="sendMsg()" class="w-11 h-11 rounded-full bg-rose-600 text-white shrink-0"><i class="fas fa-paper-plane"></i></button>
+    </div>`;
+    const body = $('chatBody'); body.scrollTop = body.scrollHeight;
+}
+function sendMsg() {
+    const inp = $('chatInput'); const text = inp.value.trim(); if (!text) return;
+    const m = matches.find(x=>x.id===activeChatId);
+    m.messages.push({ from:'me', text, at:Date.now() });
+    saveMatches(); inp.value='';
+    renderChat($('screen'));
+    // DEMO: a light simulated reply so chat feels alive. LIVE: real Firestore messages.
+    setTimeout(() => {
+        const replies = ['Hi! 😊 How are you?','That\'s nice to hear!','Haha you seem fun 😄','What do you like to do on weekends?','Where in '+me.city+' are you based?'];
+        m.messages.push({ from:'them', text: replies[Math.floor(Math.random()*replies.length)], at:Date.now() });
+        if (activeChatId!==m.id) m.unread = true;
+        saveMatches();
+        if (activeChatId===m.id && activeTab==='matches') renderChat($('screen'));
+    }, 1200 + Math.random()*1200);
+}
+
+/* ================================================================
+   PROFILE + SETTINGS
+   ================================================================ */
+function renderProfile(s) {
+    const vBadge = me.verifyStatus==='approved' ? '<span class="text-green-600"><i class="fas fa-circle-check"></i> Verified</span>'
+        : me.verifyStatus==='pending' ? '<span class="text-amber-500"><i class="fas fa-clock"></i> Verification pending</span>'
+        : '<button onclick="onbStep=3;renderOnboarding()" class="text-rose-600 underline">Get verified</button>';
+    s.innerHTML = `
+    <div class="flex-1 overflow-y-auto no-scrollbar pb-6">
+        <div class="relative h-56 bg-slate-900">
+            <img src="${me.photos[0]}" class="w-full h-full object-cover opacity-90">
+            <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
+            <div class="absolute bottom-4 left-5 text-white">
+                <h1 class="text-2xl font-extrabold">${me.name}, ${me.age}</h1>
+                <p class="text-white/80 text-sm"><i class="fas fa-location-dot mr-1"></i>${me.city}</p>
+            </div>
+            ${me.premium?'<span class="absolute top-4 right-4 bg-gold text-black text-[11px] font-extrabold px-3 py-1 rounded-full"><i class="fas fa-crown"></i> PREMIUM</span>':''}
+        </div>
+        <div class="px-5 -mt-4 relative">
+            <div class="bg-white rounded-2xl shadow-sm p-4 text-sm text-slate-600">${me.bio || 'No bio yet.'}
+                <div class="flex flex-wrap gap-1.5 mt-3">${me.interests.map(x=>`<span class="pref-chip on !text-xs !py-1">${x}</span>`).join('')}</div>
+                <p class="mt-3 text-xs">${vBadge}</p>
+            </div>
+        </div>
+
+        ${!me.premium?`
+        <div onclick="openPaywall('premium')" class="mx-5 mt-4 rounded-2xl p-4 bg-gradient-to-r from-rose-600 to-purple-600 text-white cursor-pointer">
+            <div class="flex items-center justify-between">
+                <div><p class="font-extrabold"><i class="fas fa-crown mr-1 text-gold-soft"></i>ZedMatch Premium</p>
+                <p class="text-xs text-rose-100 mt-0.5">Unlimited likes, see who likes you, boosts &amp; more</p></div>
+                <i class="fas fa-chevron-right"></i>
+            </div>
+        </div>`:''}
+
+        <div class="px-5 mt-5 grid grid-cols-3 gap-2 text-center">
+            <div class="bg-white rounded-xl py-3 shadow-sm"><p class="text-lg font-extrabold text-rose-600">${me.superLikes}</p><p class="text-[10px] text-slate-400 font-bold">SUPER LIKES</p></div>
+            <div class="bg-white rounded-xl py-3 shadow-sm"><p class="text-lg font-extrabold text-purple-600">${me.boostUntil>Date.now()?'ON':'0'}</p><p class="text-[10px] text-slate-400 font-bold">BOOST</p></div>
+            <div class="bg-white rounded-xl py-3 shadow-sm"><p class="text-lg font-extrabold text-rose-600">${matches.length}</p><p class="text-[10px] text-slate-400 font-bold">MATCHES</p></div>
+        </div>
+
+        <div class="px-5 mt-5 space-y-1">
+            <button onclick="onbStep=0;renderOnboarding()" class="w-full flex items-center gap-3 px-4 py-3.5 bg-white rounded-xl text-left"><i class="fas fa-pen text-rose-500 w-5"></i><span class="font-semibold text-sm">Edit profile</span><i class="fas fa-chevron-right ml-auto text-slate-300 text-xs"></i></button>
+            <button onclick="openSafety()" class="w-full flex items-center gap-3 px-4 py-3.5 bg-white rounded-xl text-left"><i class="fas fa-shield-halved text-rose-500 w-5"></i><span class="font-semibold text-sm">Safety center</span><i class="fas fa-chevron-right ml-auto text-slate-300 text-xs"></i></button>
+            <a href="https://wa.me/${CONFIG.WHATSAPP_SUPPORT}" target="_blank" rel="noopener" class="w-full flex items-center gap-3 px-4 py-3.5 bg-white rounded-xl text-left"><i class="fab fa-whatsapp text-green-500 w-5"></i><span class="font-semibold text-sm">Contact support</span><i class="fas fa-chevron-right ml-auto text-slate-300 text-xs"></i></a>
+            <button onclick="openLegal()" class="w-full flex items-center gap-3 px-4 py-3.5 bg-white rounded-xl text-left"><i class="fas fa-file-lines text-rose-500 w-5"></i><span class="font-semibold text-sm">Terms &amp; Privacy</span><i class="fas fa-chevron-right ml-auto text-slate-300 text-xs"></i></button>
+            <button onclick="logout()" class="w-full flex items-center gap-3 px-4 py-3.5 bg-white rounded-xl text-left text-red-500"><i class="fas fa-right-from-bracket w-5"></i><span class="font-semibold text-sm">Log out / reset</span></button>
+        </div>
+        <p class="text-center text-[10px] text-slate-300 mt-6">ZedMatch · an ORIZIS TECHNOLOGY product</p>
+    </div>`;
+}
+function logout() {
+    if (!confirm('Log out and reset this demo profile?')) return;
+    localStorage.removeItem('zedmatch_me'); localStorage.removeItem('zedmatch_matches'); localStorage.removeItem('zedmatch_whoLiked');
+    me=null; matches=[]; onbStep=0; activeTab='discover'; boot();
+}
+
+/* ================================================================
+   PROFILE CARD (detail view)
+   ================================================================ */
+function openProfileCard(id) {
+    const p = SEED.find(x=>x.id===id) || (matches.find(m=>m.id===id)||{}).profile;
+    if (!p) return;
+    const ov = document.createElement('div');
+    ov.className='fixed inset-0 z-[75] bg-black/60 flex items-end sm:items-center justify-center';
+    ov.onclick = e => { if(e.target===ov) ov.remove(); };
+    ov.innerHTML = `<div class="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl max-h-[90vh] overflow-y-auto no-scrollbar fade-in">
+        <div class="relative">
+            <img src="${p.photos[0]}" class="w-full h-80 object-cover">
+            <button onclick="this.closest('.fixed').remove()" class="absolute top-3 right-3 bg-black/50 text-white w-9 h-9 rounded-full"><i class="fas fa-xmark"></i></button>
+        </div>
+        <div class="p-5">
+            <div class="flex items-center gap-2"><h2 class="text-2xl font-extrabold">${p.name}, ${p.age}</h2>${p.verified?'<i class="fas fa-circle-check text-blue-400"></i>':''}</div>
+            <p class="text-slate-500 text-sm mt-1"><i class="fas fa-location-dot mr-1"></i>${p.city}</p>
+            <p class="mt-3 text-slate-700">${p.bio}</p>
+            <div class="flex flex-wrap gap-2 mt-4">${(p.interests||[]).map(x=>`<span class="pref-chip on !text-xs">${x}</span>`).join('')}</div>
+            <button onclick="reportProfile('${p.id}');this.closest('.fixed').remove()" class="mt-5 text-red-400 text-xs font-semibold"><i class="fas fa-flag mr-1"></i>Report or block ${p.name}</button>
+        </div>
+    </div>`;
+    document.body.appendChild(ov);
+}
+
+/* ================================================================
+   SAFETY + REPORTING
+   ================================================================ */
+function openSafety() {
+    const ov = document.createElement('div');
+    ov.className='fixed inset-0 z-[75] bg-black/60 flex items-end justify-center';
+    ov.onclick = e => { if(e.target===ov) ov.remove(); };
+    ov.innerHTML = `<div class="bg-white w-full max-w-md rounded-t-3xl p-6 fade-in">
+        <div class="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-4"></div>
+        <h2 class="text-xl font-display font-extrabold"><i class="fas fa-shield-halved text-rose-600 mr-1"></i>Your safety comes first</h2>
+        <div class="mt-4 space-y-3 text-sm text-slate-600">
+            <p><i class="fas fa-hand-holding-dollar text-rose-500 mr-2"></i><b>Never send money.</b> Anyone asking for money, airtime or gifts is a scam. Report them.</p>
+            <p><i class="fas fa-user-secret text-rose-500 mr-2"></i><b>Keep private details private.</b> Don't share your home address, workplace, bank or Mobile Money PIN.</p>
+            <p><i class="fas fa-location-dot text-rose-500 mr-2"></i><b>Meet safely.</b> First meet in a public place, in daylight, and tell a friend where you are.</p>
+            <p><i class="fas fa-flag text-rose-500 mr-2"></i><b>Report &amp; block</b> anyone who makes you uncomfortable — our team reviews every report.</p>
+        </div>
+        <a href="https://wa.me/${CONFIG.WHATSAPP_SUPPORT}" target="_blank" rel="noopener" class="mt-5 flex items-center justify-center gap-2 w-full bg-[#25D366] text-white font-bold py-3 rounded-full"><i class="fab fa-whatsapp"></i> Contact ZedMatch support</a>
+        <button onclick="this.closest('.fixed').remove()" class="mt-2 w-full text-slate-400 text-sm py-2">Close</button>
+    </div>`;
+    document.body.appendChild(ov);
+}
+function reportUser(id) { reportProfile(id); }
+function reportProfile(id) {
+    const p = SEED.find(x=>x.id===id) || (matches.find(m=>m.id===id)||{}).profile || {name:'this user', id};
+    const reasons = ['Fake profile / catfish','Asking for money / scam','Harassment or abuse','Inappropriate photos','Under 18','Other'];
+    const ov = document.createElement('div');
+    ov.className='fixed inset-0 z-[85] bg-black/60 flex items-end justify-center';
+    ov.onclick = e => { if(e.target===ov) ov.remove(); };
+    ov.innerHTML = `<div class="bg-white w-full max-w-md rounded-t-3xl p-6 fade-in">
+        <div class="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-4"></div>
+        <h2 class="text-lg font-extrabold">Report ${p.name}</h2>
+        <p class="text-sm text-slate-500 mt-1">Your report is confidential. Serious cases are removed fast.</p>
+        <div class="mt-4 space-y-2">
+            ${reasons.map(r=>`<button onclick="submitReport('${p.id}','${p.name}','${r.replace(/'/g,'')}')" class="w-full text-left px-4 py-3 bg-rose-50 rounded-xl text-sm font-semibold hover:bg-rose-100">${r}</button>`).join('')}
+        </div>
+        <button onclick="this.closest('.fixed').remove()" class="mt-3 w-full text-slate-400 text-sm py-2">Cancel</button>
+    </div>`;
+    document.body.appendChild(ov);
+}
+function submitReport(id, name, reason) {
+    reports.unshift({ type:'report', targetId:id, targetName:name, reason, by:me.id, at:Date.now(), status:'open' });
+    saveReports();
+    // Block + remove from matches immediately
+    if (!me.blockedIds.includes(id)) me.blockedIds.push(id);
+    matches = matches.filter(m=>m.id!==id);
+    saveMe(); saveMatches();
+    document.querySelectorAll('.fixed.z-\\[85\\], .fixed.z-\\[75\\]').forEach(x=>x.remove());
+    if (activeChatId===id) activeChatId=null;
+    buildPool();
+    renderHome();
+    showToast('Thanks — ' + name + ' was reported &amp; blocked. Our team will review.', 3200);
+}
+
+/* ================================================================
+   LEGAL (Terms + Privacy summary)
+   ================================================================ */
+function openLegal() {
+    const ov = document.createElement('div');
+    ov.className='fixed inset-0 z-[75] bg-black/60 flex items-end justify-center';
+    ov.onclick = e => { if(e.target===ov) ov.remove(); };
+    ov.innerHTML = `<div class="bg-white w-full max-w-md rounded-t-3xl p-6 max-h-[85vh] overflow-y-auto no-scrollbar fade-in">
+        <div class="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-4"></div>
+        <h2 class="text-xl font-display font-extrabold">Terms &amp; Privacy</h2>
+        <div class="mt-3 text-sm text-slate-600 space-y-3">
+            <p><b>18+ only.</b> ZedMatch is strictly for adults. Underage accounts are removed.</p>
+            <p><b>Be real, be respectful.</b> No fake profiles, harassment, nudity, hate speech or illegal activity. Violations lead to removal.</p>
+            <p><b>Your privacy.</b> We show only your first name, age, city and photos. We never reveal your exact location or phone number to other users.</p>
+            <p><b>Payments.</b> Premium features are billed in Kwacha via Mobile Money. Paid features unlock only after your payment is confirmed.</p>
+            <p><b>Your safety.</b> Never send money to anyone you meet here. Meet in public. Report anything suspicious.</p>
+            <p class="text-xs text-slate-400">This is a plain-language summary. The full Terms of Service and Privacy Policy apply. Questions? Contact support.</p>
+        </div>
+        <button onclick="this.closest('.fixed').remove()" class="mt-4 w-full bg-rose-600 text-white font-bold py-3 rounded-full">Got it</button>
+    </div>`;
+    document.body.appendChild(ov);
+}
+
+/* ================================================================
+   MONETIZATION — paywall + pawaPay (server-verified)
+   ================================================================ */
+function openPaywall(kind) {
+    const P = CONFIG.PRICES;
+    const plans = {
+        premium:   { icon:'crown',  title:'ZedMatch Premium', price:P.premium_month, unit:'/month', perks:['Unlimited likes','See everyone who likes you','1 Boost every week','5 Super Likes weekly','No ads'], sku:'premium_month' },
+        swipes:    { icon:'heart',  title:'Out of free likes', price:P.premium_month, unit:'/month', perks:['Unlimited likes today &amp; every day','See who likes you','Weekly Boost + Super Likes'], sku:'premium_month', sub:'You\'ve used your ' + CONFIG.FREE_SWIPES_PER_DAY + ' free likes for today.' },
+        wholiked:  { icon:'eye',    title:'See who likes you', price:P.who_liked, unit:'', perks:['Instantly see everyone who liked you','Match with them in one tap'], sku:'who_liked' },
+        boost:     { icon:'bolt',   title:'Boost', price:P.boost, unit:'', perks:['Be a top profile in ' + me.city + ' for 30 minutes','Up to 10× more views'], sku:'boost' },
+        superlike: { icon:'star',   title:'Super Likes', price:P.superlike_5, unit:'', perks:['Pack of 5 Super Likes','Stand out — they see you liked them first'], sku:'superlike_5' }
+    };
+    const pl = plans[kind] || plans.premium;
+    const ov = document.createElement('div');
+    ov.className='fixed inset-0 z-[85] bg-black/60 flex items-end justify-center';
+    ov.id='paywall';
+    ov.onclick = e => { if(e.target===ov) ov.remove(); };
+    ov.innerHTML = `<div class="bg-white w-full max-w-md rounded-t-3xl overflow-hidden fade-in">
+        <div class="bg-gradient-to-br from-rose-600 to-purple-600 text-white p-6 text-center">
+            <div class="text-4xl text-gold-soft"><i class="fas fa-${pl.icon}"></i></div>
+            <h2 class="text-xl font-extrabold mt-2">${pl.title}</h2>
+            ${pl.sub?`<p class="text-rose-100 text-sm mt-1">${pl.sub}</p>`:''}
+        </div>
+        <div class="p-6">
+            <ul class="space-y-2.5 text-sm">
+                ${pl.perks.map(x=>`<li class="flex items-center gap-2.5"><i class="fas fa-circle-check text-rose-500"></i>${x}</li>`).join('')}
+            </ul>
+            <div class="mt-5 text-center">
+                <span class="text-3xl font-extrabold text-rose-700">K${pl.price}</span><span class="text-slate-400 text-sm">${pl.unit}</span>
+            </div>
+            <button onclick="payWith('${pl.sku}',${pl.price},'${pl.title.replace(/'/g,'')}')" class="mt-4 w-full bg-zam-green hover:bg-green-800 text-white font-extrabold py-3.5 rounded-full"><i class="fas fa-mobile-screen mr-1"></i>Pay with Mobile Money</button>
+            <button onclick="this.closest('.fixed').remove()" class="mt-2 w-full text-slate-400 text-sm py-2">Maybe later</button>
+            <p class="text-center text-[10px] text-slate-400 mt-2"><i class="fas fa-lock mr-1"></i>Secure Kwacha payment · MTN, Airtel &amp; Zamtel</p>
+        </div>
+    </div>`;
+    document.body.appendChild(ov);
+}
+function payWith(sku, amount, label) {
+    const pw = $('paywall'); if (pw) pw.remove();
+    const ov = document.createElement('div');
+    ov.className='fixed inset-0 z-[90] bg-black/60 flex items-end justify-center';
+    ov.id='payModal';
+    ov.innerHTML = `<div class="bg-white w-full max-w-md rounded-t-3xl overflow-hidden fade-in">
+        <div id="payS1">
+            <div class="bg-zam-green text-white p-5"><h3 class="font-bold text-lg"><i class="fas fa-mobile-screen mr-2"></i>Mobile Money</h3><p class="text-emerald-100 text-sm mt-0.5">${label} · <b class="text-white">K${amount}</b></p></div>
+            <div class="p-5 space-y-4">
+                <div>
+                    <label class="text-sm font-semibold text-slate-600 block mb-2">Choose your network</label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button onclick="pickNet('mtn',this)" class="net-btn border-2 rounded-xl p-3 text-center"><div class="bg-yellow-400 text-black font-extrabold text-xs rounded py-1 mb-1">MTN</div><span class="text-[11px] text-slate-500">MoMo</span></button>
+                        <button onclick="pickNet('airtel',this)" class="net-btn border-2 rounded-xl p-3 text-center"><div class="bg-red-600 text-white font-extrabold text-xs rounded py-1 mb-1">Airtel</div><span class="text-[11px] text-slate-500">Money</span></button>
+                        <button onclick="pickNet('zamtel',this)" class="net-btn border-2 rounded-xl p-3 text-center"><div class="bg-green-700 text-white font-extrabold text-xs rounded py-1 mb-1">Zamtel</div><span class="text-[11px] text-slate-500">Kwacha</span></button>
+                    </div>
+                </div>
+                <div>
+                    <label class="text-sm font-semibold text-slate-600 block mb-2">Mobile money number</label>
+                    <div class="flex"><span class="bg-slate-100 border border-r-0 border-slate-300 rounded-l-xl px-3 flex items-center text-sm font-semibold text-slate-500">🇿🇲 +260</span>
+                    <input id="payPhone" type="tel" maxlength="9" placeholder="97 1234567" class="flex-1 border border-slate-300 rounded-r-xl px-3 py-3 text-sm outline-none focus:ring-2 focus:ring-zam-green" oninput="this.value=this.value.replace(/[^0-9]/g,'')"></div>
+                </div>
+                <p id="payErr" class="text-zam-red text-sm font-semibold hidden"></p>
+                <button onclick="submitPay('${sku}',${amount})" class="w-full bg-zam-green hover:bg-green-800 text-white font-bold py-3.5 rounded-xl">Send payment request <i class="fas fa-arrow-right ml-1"></i></button>
+                <button onclick="this.closest('.fixed').remove()" class="w-full text-slate-400 text-sm py-1">Cancel</button>
+            </div>
+        </div>
+        <div id="payS2" class="hidden p-8 text-center">
+            <div class="spinner mx-auto"></div>
+            <h3 class="font-bold text-lg mt-5">Check your phone 📲</h3>
+            <p class="text-slate-500 text-sm mt-2">Enter your Mobile Money PIN to approve <b class="text-zam-green">K${amount}</b>.</p>
+            <p class="text-xs text-slate-400 mt-3">Waiting for confirmation…</p>
+        </div>
+    </div>`;
+    document.body.appendChild(ov);
+}
+let _net = null;
+function pickNet(n, el) { _net=n; document.querySelectorAll('.net-btn').forEach(b=>b.style.borderColor=''); el.style.borderColor='#198a00'; }
+async function submitPay(sku, amount) {
+    const phone = ($('payPhone').value||'').trim();
+    const err = $('payErr');
+    if (!_net) { err.textContent='Please choose your network'; err.classList.remove('hidden'); return; }
+    if (!/^(9|7)\d{8}$/.test(phone)) { err.textContent='Enter a valid 9-digit number (e.g. 97 1234567)'; err.classList.remove('hidden'); return; }
+    err.classList.add('hidden');
+    $('payS1').classList.add('hidden'); $('payS2').classList.remove('hidden');
+
+    // Server-verified payment. In DEMO (no API_BASE_URL) we simulate success.
+    try {
+        if (!CONFIG.API_BASE_URL) {
+            await new Promise(r=>setTimeout(r, 2600));
+            return finalizePay(sku, amount);
+        }
+        const base = CONFIG.API_BASE_URL.replace(/\/$/,'');
+        const r = await fetch(base+'/api/pay', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ phone, network:_net, amount, item: sku }) });
+        const d = await r.json();
+        if (d.simulated) { await new Promise(x=>setTimeout(x,2200)); return finalizePay(sku, amount); }
+        // Poll status — unlock ONLY on server-confirmed success
+        const txr = d.tx_ref;
+        for (let i=0;i<20;i++) {
+            await new Promise(x=>setTimeout(x,3000));
+            const s = await (await fetch(base+'/api/pay/status?tx_ref='+encodeURIComponent(txr))).json();
+            if (s.status==='successful') return finalizePay(sku, amount);
+            if (s.status==='failed') return payFailed();
+        }
+        payFailed();
+    } catch(e) { payFailed(); }
+}
+function payFailed() {
+    const m = $('payModal'); if (m) m.remove();
+    showToast('Payment not completed. Please try again.', 3000);
+}
+function finalizePay(sku, amount) {
+    unlockAfterPayment(sku);
+    const m = $('payModal'); if (m) m.remove();
+    // success flash
+    const ov = document.createElement('div');
+    ov.className='fixed inset-0 z-[95] bg-zam-green/95 flex flex-col items-center justify-center text-white fade-in';
+    ov.innerHTML = `<div class="w-24 h-24 rounded-full bg-white flex items-center justify-center heart-pop"><i class="fas fa-check text-zam-green text-4xl"></i></div>
+        <h2 class="text-2xl font-extrabold mt-5">Payment confirmed! 🎉</h2>
+        <p class="text-emerald-50 mt-1">Your ${sku==='premium_month'?'Premium':''} feature is now unlocked.</p>`;
+    document.body.appendChild(ov);
+    setTimeout(()=>{ ov.remove(); renderHome(); }, 1800);
+}
+// Applies the purchased entitlement AFTER payment is verified.
+function unlockAfterPayment(sku) {
+    if (sku==='premium_month') { me.premium=true; me.premiumUntil=Date.now()+30*864e5; me.superLikes+=5; }
+    else if (sku==='who_liked') { DB.save('whoLiked', true); }
+    else if (sku==='boost') { me.boostUntil=Date.now()+30*60*1000; }
+    else if (sku==='superlike_5') { me.superLikes+=5; }
+    saveMe();
+}
+function openBoost() { openPaywall(me.premium?'boost':'boost'); }
+
+/* ================================================================
+   ADMIN MODERATION QUEUE
+   ================================================================ */
+function renderAdmin(s) {
+    const openReports = reports.filter(r=>r.type==='report');
+    const verifs = reports.filter(r=>r.type==='verification');
+    s.innerHTML = `
+    <header class="px-5 pt-5 pb-3"><h1 class="text-2xl font-display font-extrabold"><i class="fas fa-shield-halved text-rose-600 mr-1"></i>Moderation</h1>
+        <p class="text-slate-500 text-sm">Reports &amp; verification queue</p></header>
+    <div class="flex-1 overflow-y-auto no-scrollbar px-4 pb-6 space-y-5">
+        <div>
+            <h3 class="font-bold text-sm text-slate-500 mb-2">⚠️ Reports (${openReports.filter(r=>r.status==='open').length} open)</h3>
+            ${openReports.length===0?`<p class="text-slate-400 text-sm">No reports.</p>`:openReports.map((r,i)=>`
+                <div class="bg-white rounded-xl p-3 mb-2 shadow-sm">
+                    <div class="flex items-center justify-between"><span class="font-bold text-sm">${r.targetName}</span><span class="text-[10px] px-2 py-0.5 rounded-full ${r.status==='open'?'bg-red-100 text-red-600':'bg-green-100 text-green-600'}">${r.status}</span></div>
+                    <p class="text-xs text-slate-500 mt-1">Reason: <b>${r.reason}</b></p>
+                    ${r.status==='open'?`<div class="flex gap-2 mt-2"><button onclick="modAction(${reports.indexOf(r)},'ban')" class="flex-1 bg-red-500 text-white text-xs font-bold py-2 rounded-lg">Remove user</button><button onclick="modAction(${reports.indexOf(r)},'dismiss')" class="flex-1 bg-slate-100 text-slate-600 text-xs font-bold py-2 rounded-lg">Dismiss</button></div>`:''}
+                </div>`).join('')}
+        </div>
+        <div>
+            <h3 class="font-bold text-sm text-slate-500 mb-2">✓ Verifications (${verifs.filter(r=>r.status==='pending').length} pending)</h3>
+            ${verifs.length===0?`<p class="text-slate-400 text-sm">No verification requests.</p>`:verifs.map(r=>`
+                <div class="bg-white rounded-xl p-3 mb-2 shadow-sm flex items-center justify-between">
+                    <span class="font-bold text-sm">${r.name}</span>
+                    ${r.status==='pending'?`<div class="flex gap-2"><button onclick="modAction(${reports.indexOf(r)},'approve')" class="bg-green-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg">Approve</button><button onclick="modAction(${reports.indexOf(r)},'reject')" class="bg-slate-100 text-slate-600 text-xs font-bold px-3 py-1.5 rounded-lg">Reject</button></div>`:`<span class="text-[10px] px-2 py-0.5 rounded-full bg-green-100 text-green-600">${r.status}</span>`}
+                </div>`).join('')}
+        </div>
+        <p class="text-[11px] text-slate-400 bg-rose-50 rounded-xl p-3"><i class="fas fa-circle-info mr-1"></i>Demo queue (local). In production this reads Firestore <b>reports</b> &amp; <b>verifications</b>, protected by admin-only security rules.</p>
+    </div>`;
+}
+function modAction(i, action) {
+    const r = reports[i]; if (!r) return;
+    if (action==='ban') { r.status='removed'; showToast('User removed'); }
+    else if (action==='dismiss') { r.status='dismissed'; }
+    else if (action==='approve') { r.status='approved'; if(r.userId===me.id){me.verified=true;me.verifyStatus='approved';saveMe();} }
+    else if (action==='reject') { r.status='rejected'; if(r.userId===me.id){me.verifyStatus='rejected';saveMe();} }
+    saveReports(); renderAdmin($('screen'));
+}
+
+/* ================================================================
+   SERVICE WORKER
+   ================================================================ */
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(()=>{}));
+}
+
+boot();
+</script>
+</body>
+</html>
