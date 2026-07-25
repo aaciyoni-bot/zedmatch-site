@@ -3,15 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
-    <title>ZedMatch — Meet Someone Real in Zambia 🇿🇲💘</title>
-    <meta name="description" content="ZedMatch — Zambia's own dating app. Swipe, match and chat with real, verified people near you. Free to start. Pay with MTN MoMo, Airtel Money or Zamtel Kwacha.">
+    <title>Chibwenzi — Meet Someone Real in Zambia 🇿🇲💘</title>
+    <meta name="description" content="Chibwenzi — Zambia's own dating app. Swipe, match and chat with real, verified people near you. Free to start. Pay with MTN MoMo, Airtel Money or Zamtel Kwacha.">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#e11d48">
     <link rel="icon" type="image/png" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="ZedMatch">
+    <meta name="apple-mobile-web-app-title" content="Chibwenzi">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Playfair+Display:wght@600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -108,7 +108,7 @@
    ZEDMATCH CONFIG — edit these values
    ================================================================ */
 const CONFIG = {
-    APP_NAME: "ZedMatch",
+    APP_NAME: "Chibwenzi",
     // Backend (Vercel server.js) that runs pawaPay Mobile Money.
     // Leave "" to force full DEMO mode (payments simulated locally).
     API_BASE_URL: "",
@@ -127,7 +127,7 @@ const CONFIG = {
     // Prices in Zambian Kwacha (ZMW). Paid features unlock ONLY after a
     // server-verified payment (see unlockAfterPayment()).
     PRICES: {
-        premium_month: 79,   // ZedMatch Premium — 30 days
+        premium_month: 79,   // Chibwenzi Premium — 30 days
         who_liked:     29,   // see everyone who liked you
         boost:         19,   // 30-min boost, be seen first
         superlike_5:   15    // pack of 5 Super Likes
@@ -140,18 +140,21 @@ const CONFIG = {
 
 /* ================================================================
    FIREBASE (optional) — fill in to go live with real accounts.
-   While these stay blank, ZedMatch runs in DEMO mode using
+   While these stay blank, Chibwenzi runs in DEMO mode using
    localStorage + seeded profiles, so the whole flow is testable.
    ================================================================ */
 const FIREBASE_CONFIG = {
-    apiKey: "",
-    authDomain: "",
-    projectId: "",
-    storageBucket: "",
-    messagingSenderId: "",
-    appId: ""
+    apiKey: "AIzaSyDOWDeF5YKZ-LH8c9lM-eb6gFjFDXfIZQs",
+    authDomain: "rummikube-b2188.firebaseapp.com",
+    projectId: "rummikube-b2188",
+    storageBucket: "rummikube-b2188.firebasestorage.app",
+    messagingSenderId: "825997058278",
+    appId: "1:825997058278:web:195979e66ed892ee0f1b27"
 };
-const FIREBASE_ON = false; // set true after filling FIREBASE_CONFIG (see SETUP.md)
+// Real integration is being wired next. Stays false until it's tested, so the
+// live app keeps running in safe DEMO mode meanwhile. (Project: rummikube-b2188,
+// repurposed for Chibwenzi. Enable Anonymous auth in console before flipping on.)
+const FIREBASE_ON = false;
 
 /* ================================================================
    SEED PROFILES — used in DEMO mode so the swipe deck isn't empty.
@@ -186,8 +189,8 @@ let activeTab = 'discover';
 let activeChatId = null;
 
 const DB = {
-    load(k, d) { try { return JSON.parse(localStorage.getItem('zedmatch_' + k)) ?? d; } catch { return d; } },
-    save(k, v) { localStorage.setItem('zedmatch_' + k, JSON.stringify(v)); }
+    load(k, d) { try { return JSON.parse(localStorage.getItem('chibwenzi_' + k)) ?? d; } catch { return d; } },
+    save(k, v) { localStorage.setItem('chibwenzi_' + k, JSON.stringify(v)); }
 };
 
 function todayStr() {
@@ -246,13 +249,13 @@ function renderAgeGate() {
     app.innerHTML = `
     <div class="min-h-screen flex flex-col items-center justify-center px-7 text-center bg-gradient-to-br from-rose-600 via-rose-700 to-[#3b0618] text-white">
         <div class="text-6xl heart-pop"><i class="fas fa-heart"></i></div>
-        <h1 class="mt-5 text-4xl font-display font-extrabold">Zed<span class="text-gold-soft">Match</span></h1>
+        <h1 class="mt-5 text-4xl font-display font-extrabold">Chi<span class="text-gold-soft">bwenzi</span></h1>
         <p class="mt-2 text-rose-100/90 text-sm">Meet someone real in Zambia 🇿🇲</p>
 
         <div class="mt-10 bg-white/10 backdrop-blur border border-white/15 rounded-2xl p-6 w-full">
             <div class="text-3xl text-gold-soft"><i class="fas fa-shield-halved"></i></div>
             <h2 class="mt-3 font-extrabold text-lg">Are you 18 or older?</h2>
-            <p class="mt-2 text-rose-100/80 text-sm">ZedMatch is strictly for adults. You must be at least ${CONFIG.MIN_AGE} to use this app.</p>
+            <p class="mt-2 text-rose-100/80 text-sm">Chibwenzi is strictly for adults. You must be at least ${CONFIG.MIN_AGE} to use this app.</p>
             <button onclick="confirmAge()" class="mt-5 w-full bg-white text-rose-700 font-extrabold py-3.5 rounded-full hover:bg-rose-50 transition">Yes, I'm 18 or older</button>
             <button onclick="denyAge()" class="mt-2 w-full text-rose-100/80 text-sm py-2 hover:text-white">No, I'm under 18</button>
         </div>
@@ -269,7 +272,7 @@ function denyAge() {
     app.innerHTML = `<div class="min-h-screen flex flex-col items-center justify-center px-8 text-center bg-slate-900 text-white">
         <div class="text-5xl text-rose-400"><i class="fas fa-circle-info"></i></div>
         <h2 class="mt-4 font-bold text-xl">Sorry — you must be 18+</h2>
-        <p class="mt-2 text-slate-400 text-sm">ZedMatch is an adults-only dating app. Please come back when you're 18.</p>
+        <p class="mt-2 text-slate-400 text-sm">Chibwenzi is an adults-only dating app. Please come back when you're 18.</p>
     </div>`;
 }
 
@@ -298,7 +301,7 @@ function onbShell(title, sub, body, footer) {
     </div>`;
 }
 function onbBasics() {
-    onbShell('First, the basics', 'This is how you\'ll appear on ZedMatch.',
+    onbShell('First, the basics', 'This is how you\'ll appear on Chibwenzi.',
     `<div class="space-y-5 pb-4">
         <div>
             <label class="text-sm font-bold text-slate-600 block mb-1.5">Your first name</label>
@@ -395,7 +398,7 @@ function saveAbout() {
 }
 function onbVerify() {
     const st = me.verifyStatus;
-    onbShell('Get verified ✓', 'Verification keeps ZedMatch safe and cuts fake profiles. Take a quick selfie.',
+    onbShell('Get verified ✓', 'Verification keeps Chibwenzi safe and cuts fake profiles. Take a quick selfie.',
     `<div class="pb-4 text-center">
         <div class="mx-auto w-40 h-40 rounded-full border-4 ${st==='pending'||st==='approved'?'border-green-400':'border-rose-200 border-dashed'} flex items-center justify-center bg-rose-50 overflow-hidden">
             ${me.selfie ? `<img src="${me.selfie}" class="w-full h-full object-cover">` : `<i class="fas fa-camera text-4xl text-rose-300"></i>`}
@@ -424,7 +427,7 @@ function finishOnboarding() {
     saveMe();
     buildPool();
     renderHome();
-    setTimeout(() => showToast('Welcome to ZedMatch, ' + me.name + '! 💘', 3200), 400);
+    setTimeout(() => showToast('Welcome to Chibwenzi, ' + me.name + '! 💘', 3200), 400);
 }
 
 /* ================================================================
@@ -479,7 +482,7 @@ function renderDiscover(s) {
     <header class="px-4 pt-4 pb-2 flex items-center justify-between">
         <div class="flex items-center gap-2">
             <div class="bg-gradient-to-br from-rose-500 to-rose-700 text-white w-9 h-9 rounded-xl flex items-center justify-center shadow"><i class="fas fa-heart"></i></div>
-            <h1 class="text-xl font-display font-extrabold">Zed<span class="text-rose-600">Match</span></h1>
+            <h1 class="text-xl font-display font-extrabold">Chi<span class="text-rose-600">bwenzi</span></h1>
         </div>
         <div class="flex items-center gap-2">
             ${boosted?`<span class="text-[10px] font-bold text-white bg-gradient-to-r from-purple-500 to-rose-500 px-2 py-1 rounded-full"><i class="fas fa-bolt"></i> Boosted</span>`:''}
@@ -754,7 +757,7 @@ function renderProfile(s) {
         ${!me.premium?`
         <div onclick="openPaywall('premium')" class="mx-5 mt-4 rounded-2xl p-4 bg-gradient-to-r from-rose-600 to-purple-600 text-white cursor-pointer">
             <div class="flex items-center justify-between">
-                <div><p class="font-extrabold"><i class="fas fa-crown mr-1 text-gold-soft"></i>ZedMatch Premium</p>
+                <div><p class="font-extrabold"><i class="fas fa-crown mr-1 text-gold-soft"></i>Chibwenzi Premium</p>
                 <p class="text-xs text-rose-100 mt-0.5">Unlimited likes, see who likes you, boosts &amp; more</p></div>
                 <i class="fas fa-chevron-right"></i>
             </div>
@@ -773,12 +776,12 @@ function renderProfile(s) {
             <button onclick="openLegal()" class="w-full flex items-center gap-3 px-4 py-3.5 bg-white rounded-xl text-left"><i class="fas fa-file-lines text-rose-500 w-5"></i><span class="font-semibold text-sm">Terms &amp; Privacy</span><i class="fas fa-chevron-right ml-auto text-slate-300 text-xs"></i></button>
             <button onclick="logout()" class="w-full flex items-center gap-3 px-4 py-3.5 bg-white rounded-xl text-left text-red-500"><i class="fas fa-right-from-bracket w-5"></i><span class="font-semibold text-sm">Log out / reset</span></button>
         </div>
-        <p class="text-center text-[10px] text-slate-300 mt-6">ZedMatch · an ORIZIS TECHNOLOGY product</p>
+        <p class="text-center text-[10px] text-slate-300 mt-6">Chibwenzi · an ORIZIS TECHNOLOGY product</p>
     </div>`;
 }
 function logout() {
     if (!confirm('Log out and reset this demo profile?')) return;
-    localStorage.removeItem('zedmatch_me'); localStorage.removeItem('zedmatch_matches'); localStorage.removeItem('zedmatch_whoLiked');
+    localStorage.removeItem('chibwenzi_me'); localStorage.removeItem('chibwenzi_matches'); localStorage.removeItem('chibwenzi_whoLiked');
     me=null; matches=[]; onbStep=0; activeTab='discover'; boot();
 }
 
@@ -823,7 +826,7 @@ function openSafety() {
             <p><i class="fas fa-location-dot text-rose-500 mr-2"></i><b>Meet safely.</b> First meet in a public place, in daylight, and tell a friend where you are.</p>
             <p><i class="fas fa-flag text-rose-500 mr-2"></i><b>Report &amp; block</b> anyone who makes you uncomfortable — our team reviews every report.</p>
         </div>
-        <a href="https://wa.me/${CONFIG.WHATSAPP_SUPPORT}" target="_blank" rel="noopener" class="mt-5 flex items-center justify-center gap-2 w-full bg-[#25D366] text-white font-bold py-3 rounded-full"><i class="fab fa-whatsapp"></i> Contact ZedMatch support</a>
+        <a href="https://wa.me/${CONFIG.WHATSAPP_SUPPORT}" target="_blank" rel="noopener" class="mt-5 flex items-center justify-center gap-2 w-full bg-[#25D366] text-white font-bold py-3 rounded-full"><i class="fab fa-whatsapp"></i> Contact Chibwenzi support</a>
         <button onclick="this.closest('.fixed').remove()" class="mt-2 w-full text-slate-400 text-sm py-2">Close</button>
     </div>`;
     document.body.appendChild(ov);
@@ -871,7 +874,7 @@ function openLegal() {
         <div class="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-4"></div>
         <h2 class="text-xl font-display font-extrabold">Terms &amp; Privacy</h2>
         <div class="mt-3 text-sm text-slate-600 space-y-3">
-            <p><b>18+ only.</b> ZedMatch is strictly for adults. Underage accounts are removed.</p>
+            <p><b>18+ only.</b> Chibwenzi is strictly for adults. Underage accounts are removed.</p>
             <p><b>Be real, be respectful.</b> No fake profiles, harassment, nudity, hate speech or illegal activity. Violations lead to removal.</p>
             <p><b>Your privacy.</b> We show only your first name, age, city and photos. We never reveal your exact location or phone number to other users.</p>
             <p><b>Payments.</b> Premium features are billed in Kwacha via Mobile Money. Paid features unlock only after your payment is confirmed.</p>
@@ -889,7 +892,7 @@ function openLegal() {
 function openPaywall(kind) {
     const P = CONFIG.PRICES;
     const plans = {
-        premium:   { icon:'crown',  title:'ZedMatch Premium', price:P.premium_month, unit:'/month', perks:['Unlimited likes','See everyone who likes you','1 Boost every week','5 Super Likes weekly','No ads'], sku:'premium_month' },
+        premium:   { icon:'crown',  title:'Chibwenzi Premium', price:P.premium_month, unit:'/month', perks:['Unlimited likes','See everyone who likes you','1 Boost every week','5 Super Likes weekly','No ads'], sku:'premium_month' },
         swipes:    { icon:'heart',  title:'Out of free likes', price:P.premium_month, unit:'/month', perks:['Unlimited likes today &amp; every day','See who likes you','Weekly Boost + Super Likes'], sku:'premium_month', sub:'You\'ve used your ' + CONFIG.FREE_SWIPES_PER_DAY + ' free likes for today.' },
         wholiked:  { icon:'eye',    title:'See who likes you', price:P.who_liked, unit:'', perks:['Instantly see everyone who liked you','Match with them in one tap'], sku:'who_liked' },
         boost:     { icon:'bolt',   title:'Boost', price:P.boost, unit:'', perks:['Be a top profile in ' + me.city + ' for 30 minutes','Up to 10× more views'], sku:'boost' },

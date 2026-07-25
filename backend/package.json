@@ -1,7 +1,7 @@
 {
-  "name": "zedmatch-backend",
+  "name": "chibwenzi-backend",
   "version": "1.0.0",
-  "description": "ZedMatch API server - pawaPay Mobile Money payments for premium features",
+  "description": "Chibwenzi API server - pawaPay Mobile Money payments for premium features",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"

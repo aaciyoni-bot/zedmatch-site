@@ -1,4 +1,4 @@
-# ZedMatch 🇿🇲💘
+# Chibwenzi 🇿🇲💘
 
 Zambia's own **Tinder-style dating app** — swipe → match → chat — with
 **Mobile Money** monetization. An ORIZIS TECHNOLOGY product.

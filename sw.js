@@ -1,5 +1,5 @@
-/* ZedMatch service worker - enables app installation and basic offline shell */
-const CACHE = 'zedmatch-v1';
+/* Chibwenzi service worker - enables app installation and basic offline shell */
+const CACHE = 'chibwenzi-v1';
 
 self.addEventListener('install', e => {
     self.skipWaiting();

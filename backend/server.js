@@ -24,7 +24,7 @@ const PAWAPAY_BASE = process.env.PAWAPAY_ENV === 'production'
     ? 'https://api.pawapay.io'
     : 'https://api.sandbox.pawapay.io';
 
-// Valid ZedMatch products and their Kwacha prices — the server is the source
+// Valid Chibwenzi products and their Kwacha prices — the server is the source
 // of truth for price, so a tampered client can't pay less than the real price.
 const PRICES = {
     premium_month: 79,
@@ -47,13 +47,13 @@ const pawapayHeaders = () => ({
 app.get('/api/health', (req, res) => {
     res.json({
         ok: true,
-        service: 'zedmatch-backend',
+        service: 'chibwenzi-backend',
         paymentsConfigured: Boolean(PAWAPAY_TOKEN),
         paymentsEnv: process.env.PAWAPAY_ENV === 'production' ? 'production' : 'sandbox'
     });
 });
 
-// Starts a Mobile Money deposit for a ZedMatch premium feature.
+// Starts a Mobile Money deposit for a Chibwenzi premium feature.
 // The customer then approves a PIN prompt on their phone; the app polls
 // /api/pay/status until it resolves.
 app.post('/api/pay', async (req, res) => {
@@ -76,7 +76,7 @@ app.post('/api/pay', async (req, res) => {
                 type: 'MMO',
                 accountDetails: { phoneNumber: '260' + phone, provider }
             },
-            customerMessage: 'ZedMatch premium'
+            customerMessage: 'Chibwenzi premium'
         }, { headers: pawapayHeaders(), timeout: 25000 });
 
         res.json({ tx_ref: depositId, status: r.data && r.data.status });

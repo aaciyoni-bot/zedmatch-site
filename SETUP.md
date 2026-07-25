@@ -1,6 +1,6 @@
-# ZedMatch — one-time setup
+# Chibwenzi — one-time setup
 
-ZedMatch runs out of the box in **DEMO mode** (localStorage + seeded profiles,
+Chibwenzi runs out of the box in **DEMO mode** (localStorage + seeded profiles,
 simulated payments) so you can test the full flow immediately. To go live with
 real accounts and real money, do the steps below.
 
@@ -54,7 +54,7 @@ uses its local simulation — safe for demos.
 
 ```bash
 cd zedmatch-site
-git init && git add -A && git commit -m "ZedMatch"
+git init && git add -A && git commit -m "Chibwenzi"
 gh repo create aaciyoni-bot/zedmatch-site --public --source=. --push
 gh api -X POST repos/aaciyoni-bot/zedmatch-site/pages -f "source[branch]=main" -f "source[path]=/"
 ```
