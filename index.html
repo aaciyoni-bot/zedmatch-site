@@ -20,11 +20,16 @@
             theme: {
                 extend: {
                     colors: {
+                        // "Zambian sunset": deep plum base → ember → gold.
+                        // Warm and romantic, but distinct from Tinder's red-orange.
                         rose: {
-                            50: '#fff1f2', 100: '#ffe4e6', 200: '#fecdd3', 400: '#fb7185',
-                            500: '#f43f5e', 600: '#e11d48', 700: '#be123c', 900: '#881337'
+                            50: '#fdf6f4', 100: '#fbe9e6', 200: '#f6ccc8', 400: '#f0808a',
+                            500: '#e8556b', 600: '#d13a56', 700: '#a82946', 900: '#2b0a1e'
                         },
+                        plum: { DEFAULT: '#2b0a1e', deep: '#1a0512', soft: '#4a1230', mist: '#7a4560' },
+                        ember: { DEFAULT: '#e8556b', soft: '#f0808a', deep: '#a82946' },
                         gold: { DEFAULT: '#e3ae4e', soft: '#f4d58d', deep: '#b8862f' },
+                        cream: { DEFAULT: '#fdf8f5', warm: '#f9efe9' },
                         zam: { green: '#198a00', red: '#de2010', black: '#000000', orange: '#ef7d00' }
                     },
                     fontFamily: { sans: ['Inter', 'sans-serif'], display: ['"Playfair Display"', 'serif'] }
@@ -33,24 +38,77 @@
         }
     </script>
     <style>
+        /* ===== CHIBWENZI DESIGN TOKENS ===== */
+        :root {
+            --plum:#2b0a1e; --plum-deep:#1a0512; --plum-soft:#4a1230;
+            --ember:#e8556b; --ember-soft:#f0808a; --ember-deep:#a82946;
+            --gold:#e3ae4e; --gold-soft:#f4d58d;
+            --cream:#fdf8f5; --cream-warm:#f9efe9;
+            --ink:#1f1218; --ink-soft:#6b5560; --ink-mute:#9c8892;
+            /* spacing scale */ --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px; --s6:32px; --s7:48px;
+            /* radii */ --r-sm:12px; --r-md:18px; --r-lg:26px; --r-xl:34px;
+            /* elevation — warm-tinted, never neutral grey */
+            --sh-sm:0 2px 8px -2px rgba(43,10,30,.10);
+            --sh-md:0 8px 24px -6px rgba(43,10,30,.16);
+            --sh-lg:0 20px 48px -12px rgba(43,10,30,.28);
+            --sunset:linear-gradient(135deg,#f5a623 0%,#e8556b 52%,#a82946 100%);
+        }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        .fade-in { animation: fadeIn 0.3s ease-in-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-        .spinner { border: 3px solid #ffe4e6; border-top-color: #e11d48; border-radius: 50%; width: 40px; height: 40px; animation: spin 0.8s linear infinite; }
+        .fade-in { animation: fadeIn .34s cubic-bezier(.22,1,.36,1); }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+        .rise-in { animation: riseIn .5s cubic-bezier(.22,1,.36,1) both; }
+        @keyframes riseIn { from { opacity:0; transform: translateY(16px); } to { opacity:1; transform:none; } }
+        .spinner { border: 3px solid var(--cream-warm); border-top-color: var(--ember); border-radius: 50%; width: 40px; height: 40px; animation: spin .8s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
         html, body { overscroll-behavior: none; }
         body { -webkit-tap-highlight-color: transparent; }
+
+        /* ===== BRAND MARK ===== */
+        .brand-mark { display:inline-flex; align-items:center; justify-content:center; border-radius:30%;
+                      background:var(--sunset); box-shadow:var(--sh-md); flex-shrink:0; }
+        .brand-mark svg { width:62%; height:62%; }
+        .wordmark { font-family:'Playfair Display',Georgia,serif; font-weight:800; letter-spacing:-0.015em; }
+
+        /* Sunset text gradient for headline accents */
+        .grad-text { background:linear-gradient(100deg,var(--gold-soft),#fff 45%,var(--gold)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+
+        /* Buttons — one primary per view, generous targets */
+        .btn-primary { background:var(--sunset); color:#fff; font-weight:800; border-radius:9999px;
+                       padding:15px 30px; box-shadow:0 10px 26px -8px rgba(168,41,70,.6);
+                       transition:transform .18s ease-out, box-shadow .18s ease-out, filter .18s; }
+        .btn-primary:hover { filter:brightness(1.06); box-shadow:0 14px 32px -8px rgba(168,41,70,.7); }
+        .btn-primary:active { transform:scale(.975); }
+        .btn-primary:disabled { filter:grayscale(.7) opacity(.55); box-shadow:none; }
+        .btn-ghost { color:var(--ink-soft); font-weight:600; border-radius:9999px; padding:12px 22px; transition:color .15s, background .15s; }
+        .btn-ghost:hover { color:var(--ink); background:var(--cream-warm); }
+        :focus-visible { outline:3px solid var(--ember-soft); outline-offset:2px; border-radius:8px; }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important; }
+        }
     </style>
 </head>
-<body class="bg-rose-50 font-sans text-slate-800 min-h-screen">
+<body class="bg-cream font-sans text-slate-800 min-h-screen">
+
+    <!-- ═══ CHIBWENZI BRAND MARK · the "C" of Chibwenzi closing into a heart ═══ -->
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+      <symbol id="chibwenzi-mark" viewBox="0 0 64 64">
+        <!-- open C arc: reads as a C, embraces the heart -->
+        <path d="M45 17.5a20.5 20.5 0 1 0 0 29" fill="none" stroke="#fff" stroke-width="7"
+              stroke-linecap="round" opacity=".95"/>
+        <!-- heart nestled in the C's opening -->
+        <path d="M45.6 24.3c2.9-3 7.6-3 10.4 0 2.8 3 2.8 7.9 0 10.9l-9.2 9.8a1.6 1.6 0 0 1-2.4 0l-9.2-9.8c-2.8-3-2.8-7.9 0-10.9 2.8-3 7.5-3 10.4 0Z"
+              fill="#fff"/>
+      </symbol>
+    </svg>
 
     <!-- ═══ ORIZIS INTRO · standalone module ═══ -->
     <div id="orizis-intro">
       <style>
         #orizis-intro { position: fixed; inset: 0; z-index: 999999; background: #0d0510; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: opacity 0.45s ease; }
         #orizis-intro.oi-out { opacity: 0; pointer-events: none; }
-        #orizis-intro .oi-mark { font-family: 'Playfair Display', Georgia, serif; font-weight: 900; font-size: clamp(38px, 9vw, 72px); letter-spacing: 0.22em; margin-right: -0.22em; background: linear-gradient(100deg, #881337 0%, #ffe4e6 28%, #e3ae4e 50%, #ffe4e6 72%, #881337 100%); background-size: 240% auto; -webkit-background-clip: text; background-clip: text; color: transparent; opacity: 0; animation: oiShine 1.9s ease forwards, oiRise 0.9s cubic-bezier(0.22,1,0.36,1) forwards; }
+        #orizis-intro .oi-mark { font-family: 'Playfair Display', Georgia, serif; font-weight: 900; font-size: clamp(38px, 9vw, 72px); letter-spacing: 0.22em; margin-right: -0.22em; background: linear-gradient(100deg, #2b0a1e 0%, #fbe9e6 28%, #e3ae4e 50%, #fbe9e6 72%, #2b0a1e 100%); background-size: 240% auto; -webkit-background-clip: text; background-clip: text; color: transparent; opacity: 0; animation: oiShine 1.9s ease forwards, oiRise 0.9s cubic-bezier(0.22,1,0.36,1) forwards; }
         #orizis-intro .oi-sub { font-family: 'Inter', Arial, sans-serif; font-weight: 700; font-size: clamp(10px, 2.2vw, 14px); letter-spacing: 0.55em; margin-right: -0.55em; color: #9d5b7e; margin-top: 14px; opacity: 0; animation: oiFade 0.7s ease 0.55s forwards; }
         #orizis-intro .oi-line { width: 0; height: 1px; background: linear-gradient(90deg, transparent, #e3ae4e, transparent); margin-top: 22px; animation: oiLine 1.1s ease 0.35s forwards; }
         #orizis-intro .oi-load { display: flex; align-items: center; gap: 8px; margin-top: 26px; color: #9d5b7e; font-family: 'Inter', Arial, sans-serif; font-weight: 600; font-size: 11px; letter-spacing: 0.2em; opacity: 0; animation: oiFade 0.7s ease 0.9s forwards; }
@@ -91,13 +149,21 @@
     .stamp-nope { right: 20px; color: #ef4444; border-color: #ef4444; transform: rotate(18deg); }
     .stamp-super { left: 50%; top: auto; bottom: 90px; transform: translateX(-50%) rotate(-8deg); color: #3b82f6; border-color: #3b82f6; }
     .interest-chip { display: inline-flex; align-items: center; gap: 5px; background: rgba(255,255,255,.16); backdrop-filter: blur(4px); border: 1px solid rgba(255,255,255,.25); color: #fff; border-radius: 9999px; padding: 4px 11px; font-size: 12px; font-weight: 600; }
-    .tab-btn { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 0 6px; color: #94a3b8; font-size: 10px; font-weight: 700; transition: color .15s; }
-    .tab-btn.active { color: #e11d48; }
+    .deck-btn { display:flex; align-items:center; justify-content:center; border-radius:9999px; background:#fff;
+                box-shadow:var(--sh-md); border:1px solid rgba(43,10,30,.06);
+                transition:transform .18s cubic-bezier(.22,1,.36,1), box-shadow .18s; }
+    .deck-btn:hover { transform:translateY(-3px); box-shadow:var(--sh-lg); }
+    .deck-btn:active { transform:scale(.9); }
+    .deck-btn-primary { background:var(--sunset); color:#fff; border:none; box-shadow:0 12px 28px -8px rgba(168,41,70,.65); }
+    .tab-btn { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 9px 0 7px; color: var(--ink-mute); font-size: 10px; font-weight: 700; transition: color .15s; position:relative; }
+    .tab-btn.active { color: var(--ember-deep); }
+    .tab-btn.active::before { content:''; position:absolute; top:0; left:50%; transform:translateX(-50%); width:26px; height:3px; border-radius:0 0 4px 4px; background:var(--sunset); }
     .tab-btn i { font-size: 20px; }
-    .pref-chip { padding: 7px 16px; border-radius: 9999px; border: 2px solid #fecdd3; font-weight: 700; font-size: 13px; color: #be123c; transition: all .15s; cursor: pointer; }
-    .pref-chip.on { background: #e11d48; color: #fff; border-color: #e11d48; }
-    .msg-in { background: #f1f5f9; color: #0f172a; border-radius: 18px 18px 18px 4px; }
-    .msg-out { background: linear-gradient(135deg,#f43f5e,#e11d48); color: #fff; border-radius: 18px 18px 4px 18px; }
+    .pref-chip { padding: 8px 17px; border-radius: 9999px; border: 1.5px solid var(--cream-warm); background:#fff; font-weight: 700; font-size: 13px; color: var(--ink-soft); transition: all .16s ease-out; cursor: pointer; }
+    .pref-chip:hover { border-color: var(--ember-soft); color: var(--ember-deep); }
+    .pref-chip.on { background: var(--sunset); color: #fff; border-color: transparent; box-shadow:0 6px 16px -6px rgba(168,41,70,.55); }
+    .msg-in { background: #fff; color: var(--ink); border-radius: 20px 20px 20px 5px; box-shadow:var(--sh-sm); }
+    .msg-out { background: var(--sunset); color: #fff; border-radius: 20px 20px 5px 20px; box-shadow:0 6px 16px -6px rgba(168,41,70,.45); }
     @keyframes heartPop { 0%{transform:scale(0);opacity:0} 50%{transform:scale(1.25);opacity:1} 100%{transform:scale(1);opacity:1} }
     .heart-pop { animation: heartPop .5s cubic-bezier(.22,1,.36,1) forwards; }
     @keyframes floatUp { from{transform:translateY(0);opacity:.9} to{transform:translateY(-120px);opacity:0} }
@@ -414,20 +480,33 @@ function saveReports() { DB.save('reports', reports); }
    ================================================================ */
 function renderAgeGate() {
     app.innerHTML = `
-    <div class="min-h-screen flex flex-col items-center justify-center px-7 text-center bg-gradient-to-br from-rose-600 via-rose-700 to-[#3b0618] text-white">
-        <div class="text-6xl heart-pop"><i class="fas fa-heart"></i></div>
-        <h1 class="mt-5 text-4xl font-display font-extrabold">Chi<span class="text-gold-soft">bwenzi</span></h1>
-        <p class="mt-2 text-rose-100/90 text-sm">Meet someone real in Zambia 🇿🇲</p>
+    <div class="relative min-h-screen flex flex-col items-center justify-center px-7 text-center text-white overflow-hidden"
+         style="background:radial-gradient(120% 90% at 50% 0%, #4a1230 0%, #2b0a1e 45%, #1a0512 100%)">
+        <!-- ambient sunset glow -->
+        <div class="absolute -top-28 -right-24 w-80 h-80 rounded-full blur-3xl opacity-40" style="background:radial-gradient(circle,#f5a623,transparent 70%)"></div>
+        <div class="absolute -bottom-32 -left-24 w-80 h-80 rounded-full blur-3xl opacity-30" style="background:radial-gradient(circle,#e8556b,transparent 70%)"></div>
 
-        <div class="mt-10 bg-white/10 backdrop-blur border border-white/15 rounded-2xl p-6 w-full">
-            <div class="text-3xl text-gold-soft"><i class="fas fa-shield-halved"></i></div>
-            <h2 class="mt-3 font-extrabold text-lg">Are you 18 or older?</h2>
-            <p class="mt-2 text-rose-100/80 text-sm">Chibwenzi is strictly for adults. You must be at least ${CONFIG.MIN_AGE} to use this app.</p>
-            <button onclick="confirmAge()" class="mt-5 w-full bg-white text-rose-700 font-extrabold py-3.5 rounded-full hover:bg-rose-50 transition">Yes, I'm 18 or older</button>
-            <button onclick="denyAge()" class="mt-2 w-full text-rose-100/80 text-sm py-2 hover:text-white">No, I'm under 18</button>
+        <div class="relative rise-in">
+            <div class="brand-mark w-[68px] h-[68px] mx-auto"><svg><use href="#chibwenzi-mark"/></svg></div>
+            <h1 class="mt-3.5 wordmark text-[42px] leading-none grad-text">Chibwenzi</h1>
+            <p class="mt-2 text-white/55 text-[10px] font-bold tracking-[0.3em] uppercase">Find your person</p>
         </div>
-        <p class="mt-6 text-[11px] text-rose-100/60 leading-relaxed max-w-xs">By continuing you agree to our <b>Terms</b> &amp; <b>Community Rules</b> and confirm your details are truthful. Fake or underage profiles are removed.</p>
-        <p class="mt-3 text-[10px] text-rose-100/40">an ORIZIS TECHNOLOGY product</p>
+
+        <div class="relative mt-7 w-full max-w-sm rise-in" style="animation-delay:.12s">
+            <div class="bg-white/[0.07] backdrop-blur-xl border border-white/10 rounded-[24px] p-5 text-left"
+                 style="box-shadow:0 24px 60px -20px rgba(0,0,0,.7)">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-gold/15 border border-gold/25 flex items-center justify-center text-gold-soft shrink-0"><i class="fas fa-shield-halved"></i></div>
+                    <h2 class="font-extrabold text-[17px] leading-tight">Are you 18 or older?</h2>
+                </div>
+                <p class="mt-2.5 text-white/70 text-[13px] leading-relaxed">Chibwenzi is strictly for adults. You must be at least ${CONFIG.MIN_AGE} to use this app.</p>
+                <button onclick="confirmAge()" class="btn-primary mt-4 w-full !py-3.5">Yes, I'm 18 or older</button>
+                <button onclick="denyAge()" class="mt-1 w-full text-white/50 text-[13px] py-2.5 hover:text-white/80 transition">No, I'm under 18</button>
+            </div>
+        </div>
+
+        <p class="relative mt-4 text-[10.5px] text-white/40 leading-relaxed max-w-[19rem] rise-in" style="animation-delay:.2s">By continuing you agree to our <b class="text-white/60">Terms</b> &amp; <b class="text-white/60">Community Rules</b>. Fake or underage profiles are removed.</p>
+        <p class="relative mt-3 text-[9px] tracking-[0.2em] text-white/25 uppercase">an ORIZIS TECHNOLOGY product</p>
     </div>`;
 }
 function confirmAge() {
@@ -458,7 +537,7 @@ function onbShell(title, sub, body, footer) {
     <div class="min-h-screen flex flex-col bg-white">
         <div class="px-6 pt-8 pb-4">
             <div class="flex gap-1.5 mb-6">
-                ${[0,1,2,3].map(i => `<div class="h-1.5 flex-1 rounded-full ${i<=onbStep?'bg-rose-600':'bg-rose-100'}"></div>`).join('')}
+                ${[0,1,2,3].map(i => `<div class="h-1.5 flex-1 rounded-full ${i<=onbStep?'bg-rose-600':'bg-cream-warm'}"></div>`).join('')}
             </div>
             <h1 class="text-2xl font-display font-extrabold">${title}</h1>
             <p class="text-slate-500 text-sm mt-1">${sub}</p>
@@ -472,11 +551,11 @@ function onbBasics() {
     `<div class="space-y-5 pb-4">
         <div>
             <label class="text-sm font-bold text-slate-600 block mb-1.5">Your first name</label>
-            <input id="onbName" value="${me.name||''}" placeholder="e.g. Chanda" maxlength="20" class="w-full border-2 border-rose-100 focus:border-rose-500 rounded-xl px-4 py-3 outline-none">
+            <input id="onbName" value="${me.name||''}" placeholder="e.g. Chanda" maxlength="20" class="w-full border-2 border-cream-warm focus:border-rose-500 rounded-xl px-4 py-3 outline-none">
         </div>
         <div>
             <label class="text-sm font-bold text-slate-600 block mb-1.5">Your age</label>
-            <input id="onbAge" value="${me.age||''}" type="number" min="18" max="99" placeholder="18+" class="w-full border-2 border-rose-100 focus:border-rose-500 rounded-xl px-4 py-3 outline-none" oninput="this.value=this.value.slice(0,2)">
+            <input id="onbAge" value="${me.age||''}" type="number" min="18" max="99" placeholder="18+" class="w-full border-2 border-cream-warm focus:border-rose-500 rounded-xl px-4 py-3 outline-none" oninput="this.value=this.value.slice(0,2)">
         </div>
         <div>
             <label class="text-sm font-bold text-slate-600 block mb-2">I am a</label>
@@ -487,13 +566,13 @@ function onbBasics() {
         </div>
         <div>
             <label class="text-sm font-bold text-slate-600 block mb-2">Your city</label>
-            <select id="onbCity" class="w-full border-2 border-rose-100 focus:border-rose-500 rounded-xl px-4 py-3 outline-none bg-white">
+            <select id="onbCity" class="w-full border-2 border-cream-warm focus:border-rose-500 rounded-xl px-4 py-3 outline-none bg-white">
                 ${CONFIG.CITIES.map(c => `<option ${me.city===c?'selected':''}>${c}</option>`).join('')}
             </select>
             <p class="text-[11px] text-slate-400 mt-1.5"><i class="fas fa-lock mr-1"></i>Only your city is ever shown — never your exact location.</p>
         </div>
     </div>`,
-    `<button onclick="saveBasics()" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-extrabold py-3.5 rounded-full transition">Continue</button>`);
+    `<button onclick="saveBasics()" class="btn-primary w-full">Continue</button>`);
 }
 function setGender(g) { me.gender = g; me.seeking = g === 'm' ? 'f' : 'm'; onbBasics(); }
 function saveBasics() {
@@ -513,15 +592,15 @@ function onbPhotos() {
         ${[0,1,2,3,4,5].map(i => {
             const p = me.photos[i];
             return p
-              ? `<div class="relative aspect-[3/4] rounded-xl overflow-hidden bg-rose-50">
+              ? `<div class="relative aspect-[3/4] rounded-xl overflow-hidden bg-cream">
                    <img src="${p}" class="w-full h-full object-cover">
                    <button onclick="removePhoto(${i})" class="absolute top-1 right-1 bg-black/60 text-white w-6 h-6 rounded-full text-xs"><i class="fas fa-xmark"></i></button>
                  </div>`
-              : `<button onclick="addPhoto()" class="aspect-[3/4] rounded-xl border-2 border-dashed border-rose-200 text-rose-300 flex items-center justify-center hover:border-rose-400 hover:text-rose-400"><i class="fas fa-plus text-xl"></i></button>`;
+              : `<button onclick="addPhoto()" class="aspect-[3/4] rounded-xl border-2 border-dashed border-rose-200/70 text-rose-400/60 flex items-center justify-center hover:border-rose-400 hover:text-rose-400"><i class="fas fa-plus text-xl"></i></button>`;
         }).join('')}
     </div>
     <p class="text-[11px] text-slate-400"><i class="fas fa-circle-info mr-1"></i>Demo mode uses sample images. On the live app you'll upload from your phone.</p>`,
-    `<button onclick="savePhotos()" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-extrabold py-3.5 rounded-full transition">Continue</button>`);
+    `<button onclick="savePhotos()" class="btn-primary w-full">Continue</button>`);
 }
 function addPhoto() {
     if (me.photos.length >= 6) return;
@@ -540,7 +619,7 @@ function onbAbout() {
     `<div class="space-y-5 pb-4">
         <div>
             <label class="text-sm font-bold text-slate-600 block mb-1.5">Your bio</label>
-            <textarea id="onbBio" rows="3" maxlength="200" placeholder="Say something real about yourself..." class="w-full border-2 border-rose-100 focus:border-rose-500 rounded-xl px-4 py-3 outline-none resize-none">${me.bio||''}</textarea>
+            <textarea id="onbBio" rows="3" maxlength="200" placeholder="Say something real about yourself..." class="w-full border-2 border-cream-warm focus:border-rose-500 rounded-xl px-4 py-3 outline-none resize-none">${me.bio||''}</textarea>
         </div>
         <div>
             <label class="text-sm font-bold text-slate-600 block mb-2">Your interests <span class="text-slate-400 font-normal">(pick a few)</span></label>
@@ -549,7 +628,7 @@ function onbAbout() {
             </div>
         </div>
     </div>`,
-    `<button onclick="saveAbout()" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-extrabold py-3.5 rounded-full transition">Continue</button>`);
+    `<button onclick="saveAbout()" class="btn-primary w-full">Continue</button>`);
 }
 function toggleInterest(x) {
     const i = me.interests.indexOf(x);
@@ -567,18 +646,18 @@ function onbVerify() {
     const st = me.verifyStatus;
     onbShell('Get verified ✓', 'Verification keeps Chibwenzi safe and cuts fake profiles. Take a quick selfie.',
     `<div class="pb-4 text-center">
-        <div class="mx-auto w-40 h-40 rounded-full border-4 ${st==='pending'||st==='approved'?'border-green-400':'border-rose-200 border-dashed'} flex items-center justify-center bg-rose-50 overflow-hidden">
-            ${me.selfie ? `<img src="${me.selfie}" class="w-full h-full object-cover">` : `<i class="fas fa-camera text-4xl text-rose-300"></i>`}
+        <div class="mx-auto w-40 h-40 rounded-full border-4 ${st==='pending'||st==='approved'?'border-green-400':'border-rose-200/70 border-dashed'} flex items-center justify-center bg-cream overflow-hidden">
+            ${me.selfie ? `<img src="${me.selfie}" class="w-full h-full object-cover">` : `<i class="fas fa-camera text-4xl text-rose-400/60"></i>`}
         </div>
         ${st==='pending' ? `<p class="mt-4 text-green-600 font-bold text-sm"><i class="fas fa-clock mr-1"></i>Selfie submitted — pending review</p>`
           : st==='approved' ? `<p class="mt-4 text-green-600 font-bold text-sm"><i class="fas fa-circle-check mr-1"></i>Verified</p>`
-          : `<button onclick="takeSelfie()" class="mt-5 bg-rose-600 hover:bg-rose-700 text-white font-bold px-6 py-3 rounded-full"><i class="fas fa-camera mr-1"></i>Take verification selfie</button>`}
-        <div class="mt-6 text-left bg-rose-50 rounded-xl p-4 text-xs text-slate-500 space-y-2">
-            <p><i class="fas fa-shield-halved text-rose-500 mr-1.5"></i>Your selfie is only used to confirm you're a real person. It's never shown publicly.</p>
-            <p><i class="fas fa-user-lock text-rose-500 mr-1.5"></i>We never share your phone number with other users.</p>
+          : `<button onclick="takeSelfie()" class="mt-5 bg-ember-deep hover:bg-plum-soft text-white font-bold px-6 py-3 rounded-full"><i class="fas fa-camera mr-1"></i>Take verification selfie</button>`}
+        <div class="mt-6 text-left bg-cream rounded-xl p-4 text-xs text-slate-500 space-y-2">
+            <p><i class="fas fa-shield-halved text-ember mr-1.5"></i>Your selfie is only used to confirm you're a real person. It's never shown publicly.</p>
+            <p><i class="fas fa-user-lock text-ember mr-1.5"></i>We never share your phone number with other users.</p>
         </div>
     </div>`,
-    `<button onclick="finishOnboarding()" class="w-full ${me.selfie?'bg-rose-600 hover:bg-rose-700':'bg-slate-200 text-slate-400'} text-white font-extrabold py-3.5 rounded-full transition">${me.selfie?'Start matching':'Skip for now'}</button>`);
+    `<button onclick="finishOnboarding()" class="w-full ${me.selfie?'bg-ember-deep hover:bg-plum-soft':'bg-slate-200 text-slate-400'} text-white font-extrabold py-3.5 rounded-full transition">${me.selfie?'Start matching':'Skip for now'}</button>`);
 }
 function takeSelfie() {
     // DEMO: simulate a selfie capture + queue for moderation.
@@ -626,7 +705,7 @@ function buildPool() {
 function renderHome() {
     if (!pool.length && activeTab === 'discover') buildPool();
     app.innerHTML = `
-    <div class="min-h-screen flex flex-col bg-rose-50">
+    <div class="min-h-screen flex flex-col bg-cream">
         <div id="screen" class="flex-1 flex flex-col overflow-hidden"></div>
         <nav class="border-t bg-white flex px-2" style="padding-bottom:env(safe-area-inset-bottom)">
             <button class="tab-btn ${activeTab==='discover'?'active':''}" onclick="switchTab('discover')"><i class="fas fa-fire"></i>Discover</button>
@@ -655,9 +734,9 @@ function renderDiscover(s) {
     const boosted = me.boostUntil > Date.now();
     s.innerHTML = `
     <header class="px-4 pt-4 pb-2 flex items-center justify-between">
-        <div class="flex items-center gap-2">
-            <div class="bg-gradient-to-br from-rose-500 to-rose-700 text-white w-9 h-9 rounded-xl flex items-center justify-center shadow"><i class="fas fa-heart"></i></div>
-            <h1 class="text-xl font-display font-extrabold">Chi<span class="text-rose-600">bwenzi</span></h1>
+        <div class="flex items-center gap-2.5">
+            <div class="brand-mark w-9 h-9"><svg><use href="#chibwenzi-mark"/></svg></div>
+            <h1 class="wordmark text-[22px] text-plum">Chibwenzi</h1>
         </div>
         <div class="flex items-center gap-2">
             ${boosted?`<span class="text-[10px] font-bold text-white bg-gradient-to-r from-purple-500 to-rose-500 px-2 py-1 rounded-full"><i class="fas fa-bolt"></i> Boosted</span>`:''}
@@ -667,13 +746,13 @@ function renderDiscover(s) {
     </header>
     <div class="px-4 text-[11px] text-slate-400 flex items-center justify-between -mt-1 mb-1">
         <span><i class="fas fa-location-dot mr-1 text-rose-400"></i>${me.city} · people near you</span>
-        <span>${me.premium?'<b class="text-rose-600">Premium</b>':(CONFIG.FREE_SWIPES_PER_DAY - me.swipesToday) + ' free likes left'}</span>
+        <span>${me.premium?'<b class="text-ember-deep">Premium</b>':(CONFIG.FREE_SWIPES_PER_DAY - me.swipesToday) + ' free likes left'}</span>
     </div>
-    <div id="deck" class="relative flex-1 mx-4 mb-2"></div>
-    <div class="flex items-center justify-center gap-4 pb-3">
-        <button onclick="swipeBtn('nope')" class="w-14 h-14 rounded-full bg-white shadow-lg border border-slate-100 text-red-500 text-2xl flex items-center justify-center active:scale-90 transition"><i class="fas fa-xmark"></i></button>
-        <button onclick="swipeBtn('super')" class="w-12 h-12 rounded-full bg-white shadow-lg border border-slate-100 text-blue-500 text-xl flex items-center justify-center active:scale-90 transition"><i class="fas fa-star"></i></button>
-        <button onclick="swipeBtn('like')" class="w-16 h-16 rounded-full bg-gradient-to-br from-rose-500 to-rose-600 shadow-xl text-white text-2xl flex items-center justify-center active:scale-90 transition"><i class="fas fa-heart"></i></button>
+    <div id="deck" class="relative flex-1 mx-4 mb-3"></div>
+    <div class="flex items-center justify-center gap-5 pb-4">
+        <button onclick="swipeBtn('nope')" aria-label="Pass" class="deck-btn w-[58px] h-[58px] text-[22px]" style="color:#d13a56"><i class="fas fa-xmark"></i></button>
+        <button onclick="swipeBtn('super')" aria-label="Super Like" class="deck-btn w-[50px] h-[50px] text-[19px]" style="color:#e3ae4e"><i class="fas fa-star"></i></button>
+        <button onclick="swipeBtn('like')" aria-label="Like" class="deck-btn deck-btn-primary w-[68px] h-[68px] text-[26px]"><i class="fas fa-heart"></i></button>
     </div>`;
     renderDeck();
 }
@@ -700,21 +779,21 @@ function renderDeck() {
 }
 function cardHtml(p, behind) {
     return `
-    <div class="swipe-card absolute inset-0 rounded-3xl overflow-hidden shadow-2xl bg-slate-900 ${behind?'scale-[.96] translate-y-2':''}" data-id="${p.id}">
-        <img src="${p.photos[0]}" class="absolute inset-0 w-full h-full object-cover" onerror="this.src='https://picsum.photos/seed/fb${p.id}/600/800'">
-        <div class="absolute inset-0 bg-gradient-to-t from-black/85 via-black/10 to-black/25"></div>
+    <div class="swipe-card absolute inset-0 overflow-hidden bg-plum ${behind?'scale-[.955] translate-y-2.5':''}" data-id="${p.id}"
+         style="border-radius:var(--r-xl); box-shadow:${behind?'var(--sh-md)':'0 26px 60px -18px rgba(43,10,30,.55)'}">
+        <img src="${p.photos[0]}" alt="" class="absolute inset-0 w-full h-full object-cover" onerror="this.src='https://picsum.photos/seed/fb${p.id}/600/800'">
+        <div class="absolute inset-0" style="background:linear-gradient(to top, rgba(26,5,18,.93) 0%, rgba(26,5,18,.55) 26%, rgba(26,5,18,.05) 52%, rgba(43,10,30,.28) 100%)"></div>
         <div class="stamp stamp-like">LIKE</div>
         <div class="stamp stamp-nope">NOPE</div>
         <div class="stamp stamp-super">SUPER</div>
-        <button onclick="openProfileCard('${p.id}')" class="absolute top-3 right-3 bg-black/40 text-white w-9 h-9 rounded-full text-sm z-10"><i class="fas fa-circle-info"></i></button>
-        <div class="absolute bottom-0 left-0 right-0 p-5 text-white">
-            <div class="flex items-end gap-2">
-                <h2 class="text-2xl font-extrabold">${p.name}, ${p.age}</h2>
-                ${p.verified?`<span class="text-blue-400 text-lg mb-0.5" title="Verified"><i class="fas fa-circle-check"></i></span>`:''}
-            </div>
-            <p class="text-white/80 text-sm mt-0.5"><i class="fas fa-location-dot mr-1"></i>${p.city}</p>
-            <p class="text-white/90 text-sm mt-2 line-clamp-2">${p.bio}</p>
-            <div class="flex flex-wrap gap-1.5 mt-3">${(p.interests||[]).slice(0,4).map(x=>`<span class="interest-chip">${x}</span>`).join('')}</div>
+        <button onclick="openProfileCard('${p.id}')" aria-label="More about ${p.name}"
+                class="absolute top-3.5 right-3.5 bg-black/35 backdrop-blur-md border border-white/15 text-white w-10 h-10 rounded-full text-sm z-10 hover:bg-black/55 transition"><i class="fas fa-circle-info"></i></button>
+        ${p.verified?`<span class="absolute top-3.5 left-3.5 z-10 inline-flex items-center gap-1.5 bg-black/35 backdrop-blur-md border border-white/15 text-white text-[11px] font-bold pl-2 pr-2.5 py-1.5 rounded-full"><i class="fas fa-circle-check text-gold-soft"></i>Verified</span>`:''}
+        <div class="absolute bottom-0 left-0 right-0 p-6 text-white">
+            <h2 class="text-[30px] font-extrabold leading-none tracking-tight">${p.name}<span class="font-light text-white/75">, ${p.age}</span></h2>
+            <p class="text-white/65 text-[13px] font-medium mt-2"><i class="fas fa-location-dot mr-1.5 text-ember-soft"></i>${p.city}</p>
+            <p class="text-white/90 text-sm mt-3 leading-relaxed line-clamp-2">${p.bio}</p>
+            <div class="flex flex-wrap gap-1.5 mt-4">${(p.interests||[]).slice(0,4).map(x=>`<span class="interest-chip">${x}</span>`).join('')}</div>
         </div>
     </div>`;
 }
@@ -807,17 +886,25 @@ function showMatch(card) {
     matches.unshift(entry);
     saveMatches();
     const ov = document.createElement('div');
-    ov.className = 'fixed inset-0 z-[80] bg-gradient-to-br from-rose-600/95 to-[#3b0618]/95 flex flex-col items-center justify-center px-8 text-center text-white fade-in';
+    ov.className = 'fixed inset-0 z-[80] flex flex-col items-center justify-center px-8 text-center text-white fade-in';
+    ov.style.background = 'radial-gradient(120% 80% at 50% 15%, #4a1230 0%, #2b0a1e 50%, #1a0512 100%)';
     ov.innerHTML = `
-        <p class="font-display text-4xl font-extrabold heart-pop">It's a Match! 💘</p>
-        <p class="text-rose-100 mt-2">You and ${card.profile? '' : ''}${card.name} liked each other.</p>
-        <div class="flex items-center gap-3 mt-8">
-            <img src="${me.photos[0]}" class="w-24 h-24 rounded-full object-cover border-4 border-white">
-            <i class="fas fa-heart text-gold-soft text-2xl"></i>
-            <img src="${card.photos[0]}" class="w-24 h-24 rounded-full object-cover border-4 border-white">
-        </div>
-        <button onclick="this.closest('div').remove(); openChatWith('${card.id}')" class="mt-10 w-full max-w-xs bg-white text-rose-700 font-extrabold py-3.5 rounded-full">Send a message</button>
-        <button onclick="this.closest('div').remove()" class="mt-2 text-rose-100/80 text-sm py-2">Keep swiping</button>`;
+        <div class="absolute top-1/4 -left-16 w-72 h-72 rounded-full blur-3xl opacity-30" style="background:radial-gradient(circle,#f5a623,transparent 70%)"></div>
+        <div class="absolute bottom-1/4 -right-16 w-72 h-72 rounded-full blur-3xl opacity-30" style="background:radial-gradient(circle,#e8556b,transparent 70%)"></div>
+        <div class="relative">
+            <p class="text-gold-soft text-[11px] font-bold tracking-[0.32em] uppercase rise-in">Chibwenzi</p>
+            <p class="wordmark text-5xl mt-2 grad-text heart-pop">It's a Match!</p>
+            <p class="text-white/70 mt-3 rise-in" style="animation-delay:.1s">You and <b class="text-white">${card.name}</b> liked each other.</p>
+            <div class="flex items-center justify-center gap-4 mt-10 rise-in" style="animation-delay:.18s">
+                <img src="${me.photos[0]}" alt="" class="w-24 h-24 rounded-full object-cover border-[3px] border-white/85" style="box-shadow:var(--sh-lg)">
+                <div class="w-12 h-12 rounded-full flex items-center justify-center text-white text-lg shrink-0" style="background:var(--sunset);box-shadow:0 8px 20px -6px rgba(232,85,107,.8)"><i class="fas fa-heart"></i></div>
+                <img src="${card.photos[0]}" alt="" class="w-24 h-24 rounded-full object-cover border-[3px] border-white/85" style="box-shadow:var(--sh-lg)">
+            </div>
+            <div class="mt-12 w-full max-w-xs mx-auto rise-in" style="animation-delay:.26s">
+                <button onclick="this.closest('.fixed').remove(); openChatWith('${card.id}')" class="btn-primary w-full">Send a message</button>
+                <button onclick="this.closest('.fixed').remove()" class="mt-1.5 w-full text-white/50 text-sm py-3 hover:text-white/80 transition">Keep swiping</button>
+            </div>
+        </div>`;
     document.body.appendChild(ov);
 }
 
@@ -851,12 +938,12 @@ function renderLikes(s) {
    ================================================================ */
 function renderMatches(s) {
     s.innerHTML = `
-    <header class="px-5 pt-5 pb-3"><h1 class="text-2xl font-display font-extrabold"><i class="fas fa-heart text-rose-600 mr-1"></i>Matches</h1></header>
+    <header class="px-5 pt-5 pb-3"><h1 class="text-2xl font-display font-extrabold"><i class="fas fa-heart text-ember-deep mr-1"></i>Matches</h1></header>
     <div class="flex-1 overflow-y-auto no-scrollbar">
         ${matches.length===0 ? `<div class="text-center py-16 text-slate-400 px-8"><i class="fas fa-heart-crack text-4xl text-rose-100"></i><p class="mt-3 text-sm">No matches yet. Head to Discover and start swiping!</p></div>` :
         matches.map(m => {
             const last = m.messages[m.messages.length-1];
-            return `<button onclick="openChatWith('${m.id}')" class="w-full flex items-center gap-3 px-5 py-3 hover:bg-rose-50 text-left border-b border-rose-50">
+            return `<button onclick="openChatWith('${m.id}')" class="w-full flex items-center gap-3 px-5 py-3 hover:bg-cream text-left border-b border-rose-50">
                 <img src="${m.profile.photos[0]}" class="w-14 h-14 rounded-full object-cover">
                 <div class="flex-1 min-w-0">
                     <div class="flex items-center gap-1.5"><span class="font-bold">${m.profile.name}</span>${m.profile.verified?'<i class="fas fa-circle-check text-blue-400 text-xs"></i>':''}</div>
@@ -878,7 +965,7 @@ function renderChat(s) {
         <div class="flex-1"><div class="flex items-center gap-1.5 font-bold">${m.profile.name}${m.profile.verified?'<i class="fas fa-circle-check text-blue-400 text-xs"></i>':''}</div><p class="text-[11px] text-slate-400">${m.profile.city}</p></div>
         <button onclick="reportUser('${m.id}')" class="text-slate-400 w-9 h-9 text-lg" title="Safety"><i class="fas fa-shield-halved"></i></button>
     </header>
-    <div id="chatBody" class="flex-1 overflow-y-auto no-scrollbar p-4 space-y-2 bg-rose-50">
+    <div id="chatBody" class="flex-1 overflow-y-auto no-scrollbar p-4 space-y-2 bg-cream">
         <div class="text-center text-[11px] text-slate-400 mb-2">
             <img src="${m.profile.photos[0]}" class="w-16 h-16 rounded-full object-cover mx-auto mb-2">
             You matched with ${m.profile.name}. Be kind and stay safe — never share money or personal details.
@@ -889,7 +976,7 @@ function renderChat(s) {
             </div>`).join('')}
     </div>
     <div class="p-3 border-t bg-white flex items-center gap-2" style="padding-bottom:calc(env(safe-area-inset-bottom) + 12px)">
-        <input id="chatInput" placeholder="Type a message..." class="flex-1 bg-rose-50 rounded-full px-4 py-3 text-sm outline-none" onkeydown="if(event.key==='Enter')sendMsg()">
+        <input id="chatInput" placeholder="Type a message..." class="flex-1 bg-cream rounded-full px-4 py-3 text-sm outline-none" onkeydown="if(event.key==='Enter')sendMsg()">
         <button onclick="sendMsg()" class="w-11 h-11 rounded-full bg-rose-600 text-white shrink-0"><i class="fas fa-paper-plane"></i></button>
     </div>`;
     const body = $('chatBody'); body.scrollTop = body.scrollHeight;
@@ -918,7 +1005,7 @@ function sendMsg() {
 function renderProfile(s) {
     const vBadge = me.verifyStatus==='approved' ? '<span class="text-green-600"><i class="fas fa-circle-check"></i> Verified</span>'
         : me.verifyStatus==='pending' ? '<span class="text-amber-500"><i class="fas fa-clock"></i> Verification pending</span>'
-        : '<button onclick="onbStep=3;renderOnboarding()" class="text-rose-600 underline">Get verified</button>';
+        : '<button onclick="onbStep=3;renderOnboarding()" class="text-ember-deep underline">Get verified</button>';
     s.innerHTML = `
     <div class="flex-1 overflow-y-auto no-scrollbar pb-6">
         <div class="relative h-56 bg-slate-900">
@@ -947,16 +1034,16 @@ function renderProfile(s) {
         </div>`:''}
 
         <div class="px-5 mt-5 grid grid-cols-3 gap-2 text-center">
-            <div class="bg-white rounded-xl py-3 shadow-sm"><p class="text-lg font-extrabold text-rose-600">${me.superLikes}</p><p class="text-[10px] text-slate-400 font-bold">SUPER LIKES</p></div>
+            <div class="bg-white rounded-xl py-3 shadow-sm"><p class="text-lg font-extrabold text-ember-deep">${me.superLikes}</p><p class="text-[10px] text-slate-400 font-bold">SUPER LIKES</p></div>
             <div class="bg-white rounded-xl py-3 shadow-sm"><p class="text-lg font-extrabold text-purple-600">${me.boostUntil>Date.now()?'ON':'0'}</p><p class="text-[10px] text-slate-400 font-bold">BOOST</p></div>
-            <div class="bg-white rounded-xl py-3 shadow-sm"><p class="text-lg font-extrabold text-rose-600">${matches.length}</p><p class="text-[10px] text-slate-400 font-bold">MATCHES</p></div>
+            <div class="bg-white rounded-xl py-3 shadow-sm"><p class="text-lg font-extrabold text-ember-deep">${matches.length}</p><p class="text-[10px] text-slate-400 font-bold">MATCHES</p></div>
         </div>
 
         <div class="px-5 mt-5 space-y-1">
-            <button onclick="onbStep=0;renderOnboarding()" class="w-full flex items-center gap-3 px-4 py-3.5 bg-white rounded-xl text-left"><i class="fas fa-pen text-rose-500 w-5"></i><span class="font-semibold text-sm">Edit profile</span><i class="fas fa-chevron-right ml-auto text-slate-300 text-xs"></i></button>
-            <button onclick="openSafety()" class="w-full flex items-center gap-3 px-4 py-3.5 bg-white rounded-xl text-left"><i class="fas fa-shield-halved text-rose-500 w-5"></i><span class="font-semibold text-sm">Safety center</span><i class="fas fa-chevron-right ml-auto text-slate-300 text-xs"></i></button>
+            <button onclick="onbStep=0;renderOnboarding()" class="w-full flex items-center gap-3 px-4 py-3.5 bg-white rounded-xl text-left"><i class="fas fa-pen text-ember w-5"></i><span class="font-semibold text-sm">Edit profile</span><i class="fas fa-chevron-right ml-auto text-slate-300 text-xs"></i></button>
+            <button onclick="openSafety()" class="w-full flex items-center gap-3 px-4 py-3.5 bg-white rounded-xl text-left"><i class="fas fa-shield-halved text-ember w-5"></i><span class="font-semibold text-sm">Safety center</span><i class="fas fa-chevron-right ml-auto text-slate-300 text-xs"></i></button>
             <a href="https://wa.me/${CONFIG.WHATSAPP_SUPPORT}" target="_blank" rel="noopener" class="w-full flex items-center gap-3 px-4 py-3.5 bg-white rounded-xl text-left"><i class="fab fa-whatsapp text-green-500 w-5"></i><span class="font-semibold text-sm">Contact support</span><i class="fas fa-chevron-right ml-auto text-slate-300 text-xs"></i></a>
-            <button onclick="openLegal()" class="w-full flex items-center gap-3 px-4 py-3.5 bg-white rounded-xl text-left"><i class="fas fa-file-lines text-rose-500 w-5"></i><span class="font-semibold text-sm">Terms &amp; Privacy</span><i class="fas fa-chevron-right ml-auto text-slate-300 text-xs"></i></button>
+            <button onclick="openLegal()" class="w-full flex items-center gap-3 px-4 py-3.5 bg-white rounded-xl text-left"><i class="fas fa-file-lines text-ember w-5"></i><span class="font-semibold text-sm">Terms &amp; Privacy</span><i class="fas fa-chevron-right ml-auto text-slate-300 text-xs"></i></button>
             <button onclick="logout()" class="w-full flex items-center gap-3 px-4 py-3.5 bg-white rounded-xl text-left text-red-500"><i class="fas fa-right-from-bracket w-5"></i><span class="font-semibold text-sm">Log out / reset</span></button>
         </div>
         <p class="text-center text-[10px] text-slate-300 mt-6">Chibwenzi · an ORIZIS TECHNOLOGY product</p>
@@ -1002,12 +1089,12 @@ function openSafety() {
     ov.onclick = e => { if(e.target===ov) ov.remove(); };
     ov.innerHTML = `<div class="bg-white w-full max-w-md rounded-t-3xl p-6 fade-in">
         <div class="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-4"></div>
-        <h2 class="text-xl font-display font-extrabold"><i class="fas fa-shield-halved text-rose-600 mr-1"></i>Your safety comes first</h2>
+        <h2 class="text-xl font-display font-extrabold"><i class="fas fa-shield-halved text-ember-deep mr-1"></i>Your safety comes first</h2>
         <div class="mt-4 space-y-3 text-sm text-slate-600">
-            <p><i class="fas fa-hand-holding-dollar text-rose-500 mr-2"></i><b>Never send money.</b> Anyone asking for money, airtime or gifts is a scam. Report them.</p>
-            <p><i class="fas fa-user-secret text-rose-500 mr-2"></i><b>Keep private details private.</b> Don't share your home address, workplace, bank or Mobile Money PIN.</p>
-            <p><i class="fas fa-location-dot text-rose-500 mr-2"></i><b>Meet safely.</b> First meet in a public place, in daylight, and tell a friend where you are.</p>
-            <p><i class="fas fa-flag text-rose-500 mr-2"></i><b>Report &amp; block</b> anyone who makes you uncomfortable — our team reviews every report.</p>
+            <p><i class="fas fa-hand-holding-dollar text-ember mr-2"></i><b>Never send money.</b> Anyone asking for money, airtime or gifts is a scam. Report them.</p>
+            <p><i class="fas fa-user-secret text-ember mr-2"></i><b>Keep private details private.</b> Don't share your home address, workplace, bank or Mobile Money PIN.</p>
+            <p><i class="fas fa-location-dot text-ember mr-2"></i><b>Meet safely.</b> First meet in a public place, in daylight, and tell a friend where you are.</p>
+            <p><i class="fas fa-flag text-ember mr-2"></i><b>Report &amp; block</b> anyone who makes you uncomfortable — our team reviews every report.</p>
         </div>
         <a href="https://wa.me/${CONFIG.WHATSAPP_SUPPORT}" target="_blank" rel="noopener" class="mt-5 flex items-center justify-center gap-2 w-full bg-[#25D366] text-white font-bold py-3 rounded-full"><i class="fab fa-whatsapp"></i> Contact Chibwenzi support</a>
         <button onclick="this.closest('.fixed').remove()" class="mt-2 w-full text-slate-400 text-sm py-2">Close</button>
@@ -1026,7 +1113,7 @@ function reportProfile(id) {
         <h2 class="text-lg font-extrabold">Report ${p.name}</h2>
         <p class="text-sm text-slate-500 mt-1">Your report is confidential. Serious cases are removed fast.</p>
         <div class="mt-4 space-y-2">
-            ${reasons.map(r=>`<button onclick="submitReport('${p.id}','${p.name}','${r.replace(/'/g,'')}')" class="w-full text-left px-4 py-3 bg-rose-50 rounded-xl text-sm font-semibold hover:bg-rose-100">${r}</button>`).join('')}
+            ${reasons.map(r=>`<button onclick="submitReport('${p.id}','${p.name}','${r.replace(/'/g,'')}')" class="w-full text-left px-4 py-3 bg-cream rounded-xl text-sm font-semibold hover:bg-cream-warm">${r}</button>`).join('')}
         </div>
         <button onclick="this.closest('.fixed').remove()" class="mt-3 w-full text-slate-400 text-sm py-2">Cancel</button>
     </div>`;
@@ -1095,7 +1182,7 @@ function openPaywall(kind) {
         </div>
         <div class="p-6">
             <ul class="space-y-2.5 text-sm">
-                ${pl.perks.map(x=>`<li class="flex items-center gap-2.5"><i class="fas fa-circle-check text-rose-500"></i>${x}</li>`).join('')}
+                ${pl.perks.map(x=>`<li class="flex items-center gap-2.5"><i class="fas fa-circle-check text-ember"></i>${x}</li>`).join('')}
             </ul>
             <div class="mt-5 text-center">
                 <span class="text-3xl font-extrabold text-rose-700">K${pl.price}</span><span class="text-slate-400 text-sm">${pl.unit}</span>
@@ -1207,7 +1294,7 @@ function renderAdmin(s) {
     const openReports = reports.filter(r=>r.type==='report');
     const verifs = reports.filter(r=>r.type==='verification');
     s.innerHTML = `
-    <header class="px-5 pt-5 pb-3"><h1 class="text-2xl font-display font-extrabold"><i class="fas fa-shield-halved text-rose-600 mr-1"></i>Moderation</h1>
+    <header class="px-5 pt-5 pb-3"><h1 class="text-2xl font-display font-extrabold"><i class="fas fa-shield-halved text-ember-deep mr-1"></i>Moderation</h1>
         <p class="text-slate-500 text-sm">Reports &amp; verification queue</p></header>
     <div class="flex-1 overflow-y-auto no-scrollbar px-4 pb-6 space-y-5">
         <div>
@@ -1227,7 +1314,7 @@ function renderAdmin(s) {
                     ${r.status==='pending'?`<div class="flex gap-2"><button onclick="modAction(${reports.indexOf(r)},'approve')" class="bg-green-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg">Approve</button><button onclick="modAction(${reports.indexOf(r)},'reject')" class="bg-slate-100 text-slate-600 text-xs font-bold px-3 py-1.5 rounded-lg">Reject</button></div>`:`<span class="text-[10px] px-2 py-0.5 rounded-full bg-green-100 text-green-600">${r.status}</span>`}
                 </div>`).join('')}
         </div>
-        <p class="text-[11px] text-slate-400 bg-rose-50 rounded-xl p-3"><i class="fas fa-circle-info mr-1"></i>Demo queue (local). In production this reads Firestore <b>reports</b> &amp; <b>verifications</b>, protected by admin-only security rules.</p>
+        <p class="text-[11px] text-slate-400 bg-cream rounded-xl p-3"><i class="fas fa-circle-info mr-1"></i>Demo queue (local). In production this reads Firestore <b>reports</b> &amp; <b>verifications</b>, protected by admin-only security rules.</p>
     </div>`;
 }
 function modAction(i, action) {
