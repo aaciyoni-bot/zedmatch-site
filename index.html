@@ -153,8 +153,8 @@ const FIREBASE_CONFIG = {
 };
 // Real integration is being wired next. Stays false until it's tested, so the
 // live app keeps running in safe DEMO mode meanwhile. (Project: rummikube-b2188,
-// repurposed for Chibwenzi. Enable Anonymous auth in console before flipping on.)
-const FIREBASE_ON = false;
+// repurposed for Chibwenzi. Anonymous/Email/Google auth enabled in console.)
+const FIREBASE_ON = true;
 
 /* ================================================================
    SEED PROFILES — used in DEMO mode so the swipe deck isn't empty.
@@ -222,12 +222,179 @@ function showToast(msg, ms) {
 }
 
 /* ================================================================
+   FIREBASE ADAPTER (real backend, cross-device). Every call is guarded
+   and falls back to DEMO on any error, so the app always works. Real
+   Firestore profiles drive real swipe→match→chat; SEED demo profiles
+   keep the deck full during cold-start.
+   ================================================================ */
+const FB = { on:false, uid:null, db:null, fs:null, msgUnsub:null };
+
+async function fbInit() {
+    if (!FIREBASE_ON || !FIREBASE_CONFIG.apiKey) return false;
+    try {
+        const [appMod, authMod, fsMod] = await Promise.all([
+            import('https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js'),
+            import('https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js'),
+            import('https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js')
+        ]);
+        const app = appMod.initializeApp(FIREBASE_CONFIG);
+        const auth = authMod.getAuth(app);
+        FB.fs = fsMod;
+        FB.db = fsMod.getFirestore(app);
+        await new Promise((resolve, reject) => {
+            const t = setTimeout(() => reject(new Error('auth timeout')), 12000);
+            authMod.onAuthStateChanged(auth, u => { if (u) { FB.uid = u.uid; clearTimeout(t); resolve(); } });
+            authMod.signInAnonymously(auth).catch(reject);
+        });
+        FB.on = true;
+        return true;
+    } catch (e) {
+        console.warn('Firebase unavailable → DEMO mode:', e && e.message);
+        FB.on = false;
+        return false;
+    }
+}
+
+// Persist my profile (only once it's a real 18+ profile, to satisfy rules).
+async function fbSaveProfile() {
+    if (!FB.on || !me || !me.name || !(me.age >= 18)) return;
+    try {
+        const { doc, setDoc } = FB.fs;
+        await setDoc(doc(FB.db, 'profiles', FB.uid), {
+            id: FB.uid, name: me.name, age: me.age, gender: me.gender, seeking: me.seeking,
+            city: me.city, bio: me.bio || '', interests: me.interests || [], photos: me.photos || [],
+            verified: !!me.verified, verifyStatus: me.verifyStatus || 'none', active: true, updatedAt: Date.now()
+        }, { merge: true });
+    } catch (e) { console.warn('fbSaveProfile', e && e.message); }
+}
+
+async function fbLoadProfile() {
+    if (!FB.on) return null;
+    try {
+        const { doc, getDoc } = FB.fs;
+        const s = await getDoc(doc(FB.db, 'profiles', FB.uid));
+        return s.exists() ? s.data() : null;
+    } catch (e) { return null; }
+}
+
+// Load real opposite-gender candidates from Firestore.
+async function fbLoadPool() {
+    if (!FB.on || !me) return [];
+    try {
+        const { collection, query, where, limit, getDocs } = FB.fs;
+        const snap = await getDocs(query(collection(FB.db, 'profiles'), where('gender', '==', me.seeking), limit(60)));
+        const seen = new Set([...me.likedIds, ...me.passedIds, ...me.superLikedIds, ...me.blockedIds, FB.uid]);
+        const out = [];
+        snap.forEach(d => {
+            const p = d.data();
+            if (d.id === FB.uid || seen.has(d.id) || !p.name || !(p.photos && p.photos.length)) return;
+            out.push({ id: d.id, name: p.name, age: p.age, gender: p.gender, city: p.city,
+                       bio: p.bio || '', interests: p.interests || [], photos: p.photos, verified: !!p.verified, _real: true });
+        });
+        return out;
+    } catch (e) { console.warn('fbLoadPool', e && e.message); return []; }
+}
+
+// Record a swipe; on a right-swipe with a reciprocal like, create the match.
+// Returns the matched card if this swipe created a match, else null.
+async function fbSwipe(card, action) {
+    if (!FB.on || !card._real) return null;
+    try {
+        const { doc, setDoc, getDoc } = FB.fs;
+        await setDoc(doc(FB.db, 'swipes', FB.uid + '_' + card.id), { by: FB.uid, target: card.id, action, at: Date.now() });
+        if (action === 'nope') return null;
+        const recip = await getDoc(doc(FB.db, 'swipes', card.id + '_' + FB.uid));
+        if (recip.exists() && ['like','super'].includes(recip.data().action)) {
+            const users = [FB.uid, card.id].sort();
+            await setDoc(doc(FB.db, 'matches', users.join('_')), {
+                users, at: Date.now(),
+                profiles: { [FB.uid]: { name: me.name, photo: (me.photos||[])[0] || '' },
+                            [card.id]: { name: card.name, photo: (card.photos||[])[0] || '' } }
+            }, { merge: true });
+            return card;
+        }
+    } catch (e) { console.warn('fbSwipe', e && e.message); }
+    return null;
+}
+
+// Real-time listener: merge my matches into the list as they appear.
+function fbListenMatches() {
+    if (!FB.on) return;
+    try {
+        const { collection, query, where, onSnapshot } = FB.fs;
+        onSnapshot(query(collection(FB.db, 'matches'), where('users', 'array-contains', FB.uid)), snap => {
+            let added = false;
+            snap.forEach(d => {
+                const data = d.data();
+                const other = data.users.find(u => u !== FB.uid);
+                if (matches.find(m => m.id === other)) return;
+                const info = (data.profiles && data.profiles[other]) || {};
+                matches.unshift({ id: other, _real: true, matchId: d.id, at: data.at || Date.now(), unread: true, messages: [],
+                    profile: { id: other, name: info.name || 'Someone', city: me.city, verified: false,
+                               photos: [info.photo || 'https://picsum.photos/seed/' + other + '/600/800'] } });
+                added = true;
+            });
+            if (added) { saveMatches(); if (activeTab === 'matches' && !activeChatId) renderTab(); }
+        });
+    } catch (e) { console.warn('fbListenMatches', e && e.message); }
+}
+
+// Real-time messages for the open chat (sorted client-side — no index needed).
+function fbListenMessages(match) {
+    if (!FB.on || !match._real) return;
+    try {
+        const { collection, query, where, onSnapshot } = FB.fs;
+        if (FB.msgUnsub) { FB.msgUnsub(); FB.msgUnsub = null; }
+        // Query by participants (not matchId): the security rules only allow reads
+        // a user can prove they're part of, and this needs no composite index.
+        FB.msgUnsub = onSnapshot(query(collection(FB.db, 'messages'), where('participants', 'array-contains', FB.uid)), snap => {
+            match.messages = snap.docs.map(d => d.data())
+                .filter(m => m.matchId === match.matchId)
+                .sort((a, b) => a.at - b.at)
+                .map(m => ({ from: m.from === FB.uid ? 'me' : 'them', text: m.text, at: m.at }));
+            saveMatches();
+            if (activeChatId === match.id) renderChat($('screen'));
+        });
+    } catch (e) { console.warn('fbListenMessages', e && e.message); }
+}
+
+async function fbSendMessage(match, text) {
+    if (!FB.on || !match._real) return false;
+    try {
+        const { collection, addDoc } = FB.fs;
+        await addDoc(collection(FB.db, 'messages'), { matchId: match.matchId, from: FB.uid, to: match.id, participants: [FB.uid, match.id], text, at: Date.now() });
+        return true;
+    } catch (e) { console.warn('fbSendMessage', e && e.message); return false; }
+}
+
+// Write to a moderation collection (reports / verifications).
+async function fbModeration(coll, data) {
+    if (!FB.on) return;
+    try { const { collection, addDoc } = FB.fs; await addDoc(collection(FB.db, coll), Object.assign({ by: FB.uid, at: Date.now() }, data)); }
+    catch (e) { console.warn('fbModeration ' + coll, e && e.message); }
+}
+
+/* ================================================================
    BOOT
    ================================================================ */
-function boot() {
-    me = DB.load('me', null);
-    matches = DB.load('matches', []);
+async function boot() {
+    app.innerHTML = '<div class="min-h-screen flex items-center justify-center"><div class="spinner"></div></div>';
     reports = DB.load('reports', []);
+    matches = DB.load('matches', []);
+
+    await fbInit();
+    if (FB.on) {
+        const prof = await fbLoadProfile();
+        const local = DB.load('me', null);
+        if (prof) {
+            me = Object.assign(freshUser(), local || {}, prof, { id: FB.uid, ageConfirmed: true, agreedTerms: true });
+        } else {
+            me = local ? Object.assign(local, { id: FB.uid }) : null;
+        }
+        fbListenMatches();
+    } else {
+        me = DB.load('me', null);   // DEMO fallback
+    }
 
     // Daily free-swipe reset
     if (me && me.swipeDate !== todayStr()) { me.swipeDate = todayStr(); me.swipesToday = 0; saveMe(); }
@@ -238,7 +405,7 @@ function boot() {
     if (!me.name || !me.gender || !me.photos.length) return renderOnboarding();
     renderHome();
 }
-function saveMe() { DB.save('me', me); }
+function saveMe() { DB.save('me', me); if (FB.on) fbSaveProfile(); }
 function saveMatches() { DB.save('matches', matches); }
 function saveReports() { DB.save('reports', reports); }
 
@@ -420,6 +587,7 @@ function takeSelfie() {
     saveMe();
     reports.push({ type:'verification', userId: me.id, name: me.name, at: Date.now(), status:'pending' });
     saveReports();
+    fbModeration('verifications', { userId: FB.uid || me.id, name: me.name, status: 'pending' });
     showToast('Selfie submitted for verification ✓');
     onbVerify();
 }
@@ -443,6 +611,13 @@ function buildPool() {
     // Boosted / verified users float up a bit
     pool.sort((a,b) => (b.verified?1:0) - (a.verified?1:0));
     deckIndex = 0;
+    // Real Firestore profiles load in and go to the front; SEED stays as filler.
+    if (FB.on) fbLoadPool().then(real => {
+        if (!real || !real.length) return;
+        const have = new Set(pool.map(p => p.id));
+        pool = real.filter(p => !have.has(p.id)).concat(pool.filter(p => !p._real));
+        if (activeTab === 'discover') renderDeck();
+    });
 }
 
 /* ================================================================
@@ -603,15 +778,18 @@ function doSwipe(card, action) {
     else me.passedIds.push(card.id);
     saveMe();
 
-    const matched = (action==='like'||action==='super') && card.likesYou;
     deckIndex++;
-    setTimeout(() => {
-        renderDeck();
-        // update the "likes left" counter
-        const t = $('screen'); if (t && activeTab==='discover') { /* light refresh */ }
-        renderDiscover($('screen'));
-        if (matched) showMatch(card);
-    }, 260);
+    const finishUI = () => { renderDeck(); renderDiscover($('screen')); };
+
+    if (FB.on && card._real) {
+        // Real profile: server-side mutual-like detection.
+        fbSwipe(card, action).then(matchedCard => { if (matchedCard) showMatch(matchedCard); });
+        setTimeout(finishUI, 260);
+        return;
+    }
+    // Demo profile: local mutual-like flag.
+    const matched = (action==='like'||action==='super') && card.likesYou;
+    setTimeout(() => { finishUI(); if (matched) showMatch(card); }, 260);
 }
 function resetDeckDemo() {
     me.likedIds=[]; me.passedIds=[]; me.superLikedIds=[]; saveMe();
@@ -622,8 +800,11 @@ function resetDeckDemo() {
    MATCH POPUP + create match
    ================================================================ */
 function showMatch(card) {
-    if (matches.find(m=>m.profile.id===card.id)) return;
-    matches.unshift({ id:card.id, profile:card, messages:[], at:Date.now(), unread:false });
+    if (matches.find(m=>m.id===card.id)) return;
+    const isReal = !!card._real && FB.on;
+    const entry = { id:card.id, profile:card, messages:[], at:Date.now(), unread:false, _real:isReal };
+    if (isReal) entry.matchId = [FB.uid, card.id].sort().join('_');
+    matches.unshift(entry);
     saveMatches();
     const ov = document.createElement('div');
     ov.className = 'fixed inset-0 z-[80] bg-gradient-to-br from-rose-600/95 to-[#3b0618]/95 flex flex-col items-center justify-center px-8 text-center text-white fade-in';
@@ -686,7 +867,7 @@ function renderMatches(s) {
         }).join('')}
     </div>`;
 }
-function openChatWith(id) { activeTab='matches'; activeChatId=id; const m=matches.find(x=>x.id===id); if(m){m.unread=false;saveMatches();} renderHome(); }
+function openChatWith(id) { activeTab='matches'; activeChatId=id; const m=matches.find(x=>x.id===id); if(m){m.unread=false;saveMatches(); if(m._real) fbListenMessages(m);} renderHome(); }
 function renderChat(s) {
     const m = matches.find(x=>x.id===activeChatId);
     if (!m) { activeChatId=null; return renderMatches(s); }
@@ -716,10 +897,12 @@ function renderChat(s) {
 function sendMsg() {
     const inp = $('chatInput'); const text = inp.value.trim(); if (!text) return;
     const m = matches.find(x=>x.id===activeChatId);
+    inp.value='';
+    if (m._real && FB.on) { fbSendMessage(m, text); return; } // real: listener re-renders
     m.messages.push({ from:'me', text, at:Date.now() });
-    saveMatches(); inp.value='';
+    saveMatches();
     renderChat($('screen'));
-    // DEMO: a light simulated reply so chat feels alive. LIVE: real Firestore messages.
+    // DEMO: a light simulated reply so chat feels alive.
     setTimeout(() => {
         const replies = ['Hi! 😊 How are you?','That\'s nice to hear!','Haha you seem fun 😄','What do you like to do on weekends?','Where in '+me.city+' are you based?'];
         m.messages.push({ from:'them', text: replies[Math.floor(Math.random()*replies.length)], at:Date.now() });
@@ -852,6 +1035,7 @@ function reportProfile(id) {
 function submitReport(id, name, reason) {
     reports.unshift({ type:'report', targetId:id, targetName:name, reason, by:me.id, at:Date.now(), status:'open' });
     saveReports();
+    fbModeration('reports', { targetId: id, targetName: name, reason, status: 'open' });
     // Block + remove from matches immediately
     if (!me.blockedIds.includes(id)) me.blockedIds.push(id);
     matches = matches.filter(m=>m.id!==id);
