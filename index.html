@@ -326,9 +326,13 @@ async function fbSaveProfile() {
     if (!FB.on || !me || !me.name || !(me.age >= 18)) return;
     try {
         const { doc, setDoc } = FB.fs;
+        // Firestore hard-caps a document at 1MB. Drop trailing photos rather than
+        // fail the whole save (the profile matters more than the 6th picture).
+        let photos = (me.photos || []).slice();
+        while (photos.length > 1 && photosBytes(photos) > PHOTO_BUDGET) photos.pop();
         await setDoc(doc(FB.db, 'profiles', FB.uid), {
             id: FB.uid, name: me.name, age: me.age, gender: me.gender, seeking: me.seeking,
-            city: me.city, bio: me.bio || '', interests: me.interests || [], photos: me.photos || [],
+            city: me.city, bio: me.bio || '', interests: me.interests || [], photos,
             verified: !!me.verified, verifyStatus: me.verifyStatus || 'none', active: true, updatedAt: Date.now()
         }, { merge: true });
     } catch (e) { console.warn('fbSaveProfile', e && e.message); }
@@ -599,15 +603,70 @@ function onbPhotos() {
               : `<button onclick="addPhoto()" class="aspect-[3/4] rounded-xl border-2 border-dashed border-rose-200/70 text-rose-400/60 flex items-center justify-center hover:border-rose-400 hover:text-rose-400"><i class="fas fa-plus text-xl"></i></button>`;
         }).join('')}
     </div>
-    <p class="text-[11px] text-slate-400"><i class="fas fa-circle-info mr-1"></i>Demo mode uses sample images. On the live app you'll upload from your phone.</p>`,
+    <p class="text-[11px] text-slate-400"><i class="fas fa-circle-info mr-1"></i>Photos are uploaded from your phone. Clear face photos get the most matches — no nudity, no group shots.</p>`,
     `<button onclick="savePhotos()" class="btn-primary w-full">Continue</button>`);
 }
+/* ---- REAL PHOTO UPLOAD ---------------------------------------------------
+   Photos are picked from the phone, resized + compressed in the browser, and
+   stored on the profile document. Firestore docs cap at 1MB, so we shrink to
+   ~800px JPEG (~60KB each) and enforce a total budget.
+   To move to Firebase Storage later (needs billing enabled), swap
+   compressImage()'s return for a Storage download URL — nothing else changes.
+-------------------------------------------------------------------------- */
+const PHOTO_MAX_EDGE = 800;      // px on the long edge
+const PHOTO_QUALITY  = 0.7;      // JPEG quality
+const PHOTO_BUDGET   = 700000;   // total chars of image data we allow (~0.7MB)
+
+function compressImage(file) {
+    return new Promise((resolve, reject) => {
+        if (!file.type.startsWith('image/')) return reject(new Error('Not an image'));
+        const reader = new FileReader();
+        reader.onerror = () => reject(new Error('Could not read file'));
+        reader.onload = () => {
+            const img = new Image();
+            img.onerror = () => reject(new Error('Could not open image'));
+            img.onload = () => {
+                let { width: w, height: h } = img;
+                const scale = Math.min(1, PHOTO_MAX_EDGE / Math.max(w, h));
+                w = Math.round(w * scale); h = Math.round(h * scale);
+                const c = document.createElement('canvas');
+                c.width = w; c.height = h;
+                c.getContext('2d').drawImage(img, 0, 0, w, h);
+                resolve(c.toDataURL('image/jpeg', PHOTO_QUALITY));
+            };
+            img.src = reader.result;
+        };
+        reader.readAsDataURL(file);
+    });
+}
+
+function photosBytes(list) { return (list || []).reduce((n, p) => n + (p ? p.length : 0), 0); }
+
 function addPhoto() {
-    if (me.photos.length >= 6) return;
-    // DEMO: seed a sample image. LIVE: replace with Firebase Storage upload.
-    const seed = 'zm-me-' + me.id + '-' + me.photos.length + '-' + Math.floor(Math.random()*9999);
-    me.photos.push('https://picsum.photos/seed/' + seed + '/600/800');
-    saveMe(); onbPhotos();
+    if (me.photos.length >= 6) return showToast('You can add up to 6 photos');
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.multiple = true;
+    input.onchange = async () => {
+        const files = Array.from(input.files || []).slice(0, 6 - me.photos.length);
+        if (!files.length) return;
+        showToast('Adding your photo' + (files.length > 1 ? 's' : '') + '…');
+        for (const f of files) {
+            try {
+                const data = await compressImage(f);
+                if (photosBytes(me.photos) + data.length > PHOTO_BUDGET) {
+                    showToast('That photo is too large — try a smaller one', 3200);
+                    break;
+                }
+                me.photos.push(data);
+            } catch (e) {
+                showToast('Could not add that photo. Try another.', 3200);
+            }
+        }
+        saveMe(); onbPhotos();
+    };
+    input.click();
 }
 function removePhoto(i) { me.photos.splice(i,1); saveMe(); onbPhotos(); }
 function savePhotos() {
@@ -660,13 +719,26 @@ function onbVerify() {
     `<button onclick="finishOnboarding()" class="w-full ${me.selfie?'bg-ember-deep hover:bg-plum-soft':'bg-slate-200 text-slate-400'} text-white font-extrabold py-3.5 rounded-full transition">${me.selfie?'Start matching':'Skip for now'}</button>`);
 }
 function takeSelfie() {
-    // DEMO: simulate a selfie capture + queue for moderation.
-    me.selfie = 'https://picsum.photos/seed/selfie-' + me.id + '/300/300';
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.capture = 'user';        // opens the front camera on phones
+    input.onchange = async () => {
+        const f = (input.files || [])[0];
+        if (!f) return;
+        try { me.selfie = await compressImage(f); }
+        catch (e) { return showToast('Could not read that photo. Try again.', 3200); }
+        submitSelfie();
+    };
+    input.click();
+}
+function submitSelfie() {
     me.verifyStatus = 'pending';
     saveMe();
     reports.push({ type:'verification', userId: me.id, name: me.name, at: Date.now(), status:'pending' });
     saveReports();
-    fbModeration('verifications', { userId: FB.uid || me.id, name: me.name, status: 'pending' });
+    // The selfie goes to the moderation queue only — never onto the public profile.
+    fbModeration('verifications', { userId: FB.uid || me.id, name: me.name, status: 'pending', selfie: me.selfie || '' });
     showToast('Selfie submitted for verification ✓');
     onbVerify();
 }
