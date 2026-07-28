@@ -27,10 +27,7 @@ const PAWAPAY_BASE = process.env.PAWAPAY_ENV === 'production'
 // Valid Chibwenzi products and their Kwacha prices — the server is the source
 // of truth for price, so a tampered client can't pay less than the real price.
 const PRICES = {
-    premium_month: 79,
-    who_liked: 29,
-    boost: 19,
-    superlike_5: 15
+    premium_month: 100   // Chibwenzi Premium — unlimited, 30 days
 };
 
 const PAWAPAY_PROVIDERS = {

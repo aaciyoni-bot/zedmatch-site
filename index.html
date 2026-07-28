@@ -176,8 +176,9 @@
 const CONFIG = {
     APP_NAME: "Chibwenzi",
     // Backend (Vercel server.js) that runs pawaPay Mobile Money.
-    // Leave "" to force full DEMO mode (payments simulated locally).
-    API_BASE_URL: "",
+    // Live. Payments go through only once PAWAPAY_TOKEN is set on the server;
+    // until then /api/pay reports simulated mode and NOTHING is unlocked.
+    API_BASE_URL: "https://chibwenzi-backend.vercel.app",
 
     // Support contact (business number — never a private phone).
     WHATSAPP_SUPPORT: "260971234567",
@@ -192,11 +193,10 @@ const CONFIG = {
 
     // Prices in Zambian Kwacha (ZMW). Paid features unlock ONLY after a
     // server-verified payment (see unlockAfterPayment()).
+    // ONE subscription unlocks everything. Mirrored server-side in
+    // backend/server.js — the server is the source of truth for price.
     PRICES: {
-        premium_month: 79,   // Chibwenzi Premium — 30 days
-        who_liked:     29,   // see everyone who liked you
-        boost:         19,   // 30-min boost, be seen first
-        superlike_5:   15    // pack of 5 Super Likes
+        premium_month: 100   // Chibwenzi Premium — unlimited, 30 days
     },
 
     // Admin access: profiles whose id/email is listed here see the moderation queue.
@@ -1028,7 +1028,7 @@ function renderProfile(s) {
         <div onclick="openPaywall('premium')" class="mx-5 mt-4 rounded-2xl p-4 bg-gradient-to-r from-rose-600 to-purple-600 text-white cursor-pointer">
             <div class="flex items-center justify-between">
                 <div><p class="font-extrabold"><i class="fas fa-crown mr-1 text-gold-soft"></i>Chibwenzi Premium</p>
-                <p class="text-xs text-rose-100 mt-0.5">Unlimited likes, see who likes you, boosts &amp; more</p></div>
+                <p class="text-xs text-rose-100 mt-0.5">Unlimited everything · <b>K${CONFIG.PRICES.premium_month}</b>/month</p></div>
                 <i class="fas fa-chevron-right"></i>
             </div>
         </div>`:''}
@@ -1162,12 +1162,18 @@ function openLegal() {
    ================================================================ */
 function openPaywall(kind) {
     const P = CONFIG.PRICES;
+    // One plan, one price — every entry point sells the same K100 subscription.
+    const PERKS = ['Unlimited likes — swipe as much as you want',
+                   'See everyone who likes you',
+                   'Unlimited Super Likes',
+                   'Boost — be seen first in ' + me.city,
+                   'Priority support'];
     const plans = {
-        premium:   { icon:'crown',  title:'Chibwenzi Premium', price:P.premium_month, unit:'/month', perks:['Unlimited likes','See everyone who likes you','1 Boost every week','5 Super Likes weekly','No ads'], sku:'premium_month' },
-        swipes:    { icon:'heart',  title:'Out of free likes', price:P.premium_month, unit:'/month', perks:['Unlimited likes today &amp; every day','See who likes you','Weekly Boost + Super Likes'], sku:'premium_month', sub:'You\'ve used your ' + CONFIG.FREE_SWIPES_PER_DAY + ' free likes for today.' },
-        wholiked:  { icon:'eye',    title:'See who likes you', price:P.who_liked, unit:'', perks:['Instantly see everyone who liked you','Match with them in one tap'], sku:'who_liked' },
-        boost:     { icon:'bolt',   title:'Boost', price:P.boost, unit:'', perks:['Be a top profile in ' + me.city + ' for 30 minutes','Up to 10× more views'], sku:'boost' },
-        superlike: { icon:'star',   title:'Super Likes', price:P.superlike_5, unit:'', perks:['Pack of 5 Super Likes','Stand out — they see you liked them first'], sku:'superlike_5' }
+        premium:   { icon:'crown', title:'Chibwenzi Premium', price:P.premium_month, unit:'/month', perks:PERKS, sku:'premium_month' },
+        swipes:    { icon:'heart', title:'Out of free likes', price:P.premium_month, unit:'/month', perks:PERKS, sku:'premium_month', sub:'You\'ve used your ' + CONFIG.FREE_SWIPES_PER_DAY + ' free likes for today.' },
+        wholiked:  { icon:'eye',   title:'See who likes you', price:P.premium_month, unit:'/month', perks:PERKS, sku:'premium_month', sub:'Unlock with Chibwenzi Premium.' },
+        boost:     { icon:'bolt',  title:'Boost your profile', price:P.premium_month, unit:'/month', perks:PERKS, sku:'premium_month', sub:'Boost is included in Premium.' },
+        superlike: { icon:'star',  title:'Super Likes', price:P.premium_month, unit:'/month', perks:PERKS, sku:'premium_month', sub:'Unlimited Super Likes with Premium.' }
     };
     const pl = plans[kind] || plans.premium;
     const ov = document.createElement('div');
@@ -1240,16 +1246,14 @@ async function submitPay(sku, amount) {
     err.classList.add('hidden');
     $('payS1').classList.add('hidden'); $('payS2').classList.remove('hidden');
 
-    // Server-verified payment. In DEMO (no API_BASE_URL) we simulate success.
+    // Real money only: Premium unlocks solely on a server-confirmed payment.
+    // No API configured, or payments not live yet → tell the user, unlock nothing.
     try {
-        if (!CONFIG.API_BASE_URL) {
-            await new Promise(r=>setTimeout(r, 2600));
-            return finalizePay(sku, amount);
-        }
+        if (!CONFIG.API_BASE_URL) return payUnavailable();
         const base = CONFIG.API_BASE_URL.replace(/\/$/,'');
         const r = await fetch(base+'/api/pay', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ phone, network:_net, amount, item: sku }) });
         const d = await r.json();
-        if (d.simulated) { await new Promise(x=>setTimeout(x,2200)); return finalizePay(sku, amount); }
+        if (d.simulated) return payUnavailable();   // pawaPay token not set on the server
         // Poll status — unlock ONLY on server-confirmed success
         const txr = d.tx_ref;
         for (let i=0;i<20;i++) {
@@ -1265,6 +1269,12 @@ function payFailed() {
     const m = $('payModal'); if (m) m.remove();
     showToast('Payment not completed. Please try again.', 3000);
 }
+// Payments aren't live yet (no pawaPay merchant token on the server).
+// We never grant Premium in this state — say so honestly instead.
+function payUnavailable() {
+    const m = $('payModal'); if (m) m.remove();
+    showToast('Mobile Money payments are not live yet — nothing was charged. Please try again soon.', 4200);
+}
 function finalizePay(sku, amount) {
     unlockAfterPayment(sku);
     const m = $('payModal'); if (m) m.remove();
@@ -1279,10 +1289,14 @@ function finalizePay(sku, amount) {
 }
 // Applies the purchased entitlement AFTER payment is verified.
 function unlockAfterPayment(sku) {
-    if (sku==='premium_month') { me.premium=true; me.premiumUntil=Date.now()+30*864e5; me.superLikes+=5; }
-    else if (sku==='who_liked') { DB.save('whoLiked', true); }
-    else if (sku==='boost') { me.boostUntil=Date.now()+30*60*1000; }
-    else if (sku==='superlike_5') { me.superLikes+=5; }
+    if (sku==='premium_month') {
+        // One subscription unlocks everything for 30 days.
+        me.premium = true;
+        me.premiumUntil = Date.now() + 30*864e5;
+        me.superLikes = 999;
+        me.boostUntil = Date.now() + 30*864e5;
+        DB.save('whoLiked', true);
+    }
     saveMe();
 }
 function openBoost() { openPaywall(me.premium?'boost':'boost'); }
