@@ -6,7 +6,7 @@
     <title>Chibwenzi — Meet Someone Real in Zambia 🇿🇲💘</title>
     <meta name="description" content="Chibwenzi — Zambia's own dating app. Swipe, match and chat with real, verified people near you. Free to start. Pay with MTN MoMo, Airtel Money or Zamtel Kwacha.">
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#e11d48">
+    <meta name="theme-color" content="#241a20">
     <link rel="icon" type="image/png" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -20,16 +20,16 @@
             theme: {
                 extend: {
                     colors: {
-                        // "Zambian sunset": deep plum base → ember → gold.
-                        // Warm and romantic, but distinct from Tinder's red-orange.
+                        // Restrained: warm near-black + soft cream, one muted wine
+                        // accent, gold only as a hairline. Deliberately quiet.
                         rose: {
-                            50: '#fdf6f4', 100: '#fbe9e6', 200: '#f6ccc8', 400: '#f0808a',
-                            500: '#e8556b', 600: '#d13a56', 700: '#a82946', 900: '#2b0a1e'
+                            50: '#faf8f6', 100: '#f2ece8', 200: '#e4d4d8', 400: '#c07285',
+                            500: '#a34257', 600: '#8a3348', 700: '#6d2739', 900: '#241a20'
                         },
-                        plum: { DEFAULT: '#2b0a1e', deep: '#1a0512', soft: '#4a1230', mist: '#7a4560' },
-                        ember: { DEFAULT: '#e8556b', soft: '#f0808a', deep: '#a82946' },
-                        gold: { DEFAULT: '#e3ae4e', soft: '#f4d58d', deep: '#b8862f' },
-                        cream: { DEFAULT: '#fdf8f5', warm: '#f9efe9' },
+                        plum: { DEFAULT: '#241a20', deep: '#181114', soft: '#3a2b33', mist: '#6f636a' },
+                        ember: { DEFAULT: '#a34257', soft: '#c07285', deep: '#8a3348' },
+                        gold: { DEFAULT: '#c2a06a', soft: '#dcc59b', deep: '#9c7f4d' },
+                        cream: { DEFAULT: '#faf8f6', warm: '#f2ece8' },
                         zam: { green: '#198a00', red: '#de2010', black: '#000000', orange: '#ef7d00' }
                     },
                     fontFamily: { sans: ['Inter', 'sans-serif'], display: ['"Playfair Display"', 'serif'] }
@@ -40,18 +40,22 @@
     <style>
         /* ===== CHIBWENZI DESIGN TOKENS ===== */
         :root {
-            --plum:#2b0a1e; --plum-deep:#1a0512; --plum-soft:#4a1230;
-            --ember:#e8556b; --ember-soft:#f0808a; --ember-deep:#a82946;
-            --gold:#e3ae4e; --gold-soft:#f4d58d;
-            --cream:#fdf8f5; --cream-warm:#f9efe9;
-            --ink:#1f1218; --ink-soft:#6b5560; --ink-mute:#9c8892;
+            /* Restrained palette: warm near-black + soft cream, with ONE muted
+               wine accent used sparingly. No loud gradients. */
+            --plum:#241a20; --plum-deep:#181114; --plum-soft:#3a2b33;
+            --ember:#a34257; --ember-soft:#c07285; --ember-deep:#8a3348;
+            --gold:#c2a06a; --gold-soft:#dcc59b;
+            --cream:#faf8f6; --cream-warm:#f2ece8;
+            --ink:#241a20; --ink-soft:#6f636a; --ink-mute:#a2969c;
             /* spacing scale */ --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px; --s6:32px; --s7:48px;
             /* radii */ --r-sm:12px; --r-md:18px; --r-lg:26px; --r-xl:34px;
             /* elevation — warm-tinted, never neutral grey */
-            --sh-sm:0 2px 8px -2px rgba(43,10,30,.10);
-            --sh-md:0 8px 24px -6px rgba(43,10,30,.16);
-            --sh-lg:0 20px 48px -12px rgba(43,10,30,.28);
-            --sunset:linear-gradient(135deg,#f5a623 0%,#e8556b 52%,#a82946 100%);
+            --sh-sm:0 1px 3px rgba(36,26,32,.06), 0 1px 2px rgba(36,26,32,.04);
+            --sh-md:0 4px 16px -4px rgba(36,26,32,.10);
+            --sh-lg:0 16px 40px -12px rgba(36,26,32,.18);
+            /* "sunset" is now a single quiet wine — kept as a variable so every
+               component stays in step if the accent is ever retuned. */
+            --sunset:#a34257;
         }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
@@ -66,20 +70,24 @@
 
         /* ===== BRAND MARK ===== */
         .brand-mark { display:inline-flex; align-items:center; justify-content:center; border-radius:30%;
-                      background:var(--sunset); box-shadow:var(--sh-md); flex-shrink:0; }
-        .brand-mark svg { width:62%; height:62%; }
-        .wordmark { font-family:'Playfair Display',Georgia,serif; font-weight:800; letter-spacing:-0.015em; }
+                      background:var(--plum); box-shadow:var(--sh-sm); flex-shrink:0; }
+        .brand-mark svg { width:60%; height:60%; }
+        .brand-mark .mk-c { stroke:var(--gold); }
+        .brand-mark .mk-h { fill:var(--ember-soft); }
+        .wordmark { font-family:'Playfair Display',Georgia,serif; font-weight:700; letter-spacing:-0.01em; }
 
-        /* Sunset text gradient for headline accents */
-        .grad-text { background:linear-gradient(100deg,var(--gold-soft),#fff 45%,var(--gold)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+        /* Quiet metallic wordmark — no rainbow */
+        .grad-text { color:var(--cream); }
 
-        /* Buttons — one primary per view, generous targets */
-        .btn-primary { background:var(--sunset); color:#fff; font-weight:800; border-radius:9999px;
-                       padding:15px 30px; box-shadow:0 10px 26px -8px rgba(168,41,70,.6);
-                       transition:transform .18s ease-out, box-shadow .18s ease-out, filter .18s; }
-        .btn-primary:hover { filter:brightness(1.06); box-shadow:0 14px 32px -8px rgba(168,41,70,.7); }
-        .btn-primary:active { transform:scale(.975); }
-        .btn-primary:disabled { filter:grayscale(.7) opacity(.55); box-shadow:none; }
+        /* Buttons — solid, one primary per view, generous targets */
+        .btn-primary { background:var(--plum); color:var(--cream); font-weight:700; border-radius:9999px;
+                       padding:15px 30px; box-shadow:var(--sh-sm);
+                       transition:transform .18s ease-out, box-shadow .18s ease-out, background .18s; }
+        .btn-primary:hover { background:#31232a; box-shadow:var(--sh-md); }
+        .btn-primary:active { transform:scale(.985); }
+        .btn-primary:disabled { opacity:.45; box-shadow:none; }
+        .btn-accent { background:var(--ember); color:#fff; }
+        .btn-accent:hover { background:var(--ember-deep); }
         .btn-ghost { color:var(--ink-soft); font-weight:600; border-radius:9999px; padding:12px 22px; transition:color .15s, background .15s; }
         .btn-ghost:hover { color:var(--ink); background:var(--cream-warm); }
         :focus-visible { outline:3px solid var(--ember-soft); outline-offset:2px; border-radius:8px; }
@@ -95,11 +103,11 @@
     <svg width="0" height="0" style="position:absolute" aria-hidden="true">
       <symbol id="chibwenzi-mark" viewBox="0 0 64 64">
         <!-- open C arc: reads as a C, embraces the heart -->
-        <path d="M45 17.5a20.5 20.5 0 1 0 0 29" fill="none" stroke="#fff" stroke-width="7"
-              stroke-linecap="round" opacity=".95"/>
+        <path class="mk-c" d="M45 17.5a20.5 20.5 0 1 0 0 29" fill="none" stroke="#c2a06a" stroke-width="5"
+              stroke-linecap="round"/>
         <!-- heart nestled in the C's opening -->
-        <path d="M45.6 24.3c2.9-3 7.6-3 10.4 0 2.8 3 2.8 7.9 0 10.9l-9.2 9.8a1.6 1.6 0 0 1-2.4 0l-9.2-9.8c-2.8-3-2.8-7.9 0-10.9 2.8-3 7.5-3 10.4 0Z"
-              fill="#fff"/>
+        <path class="mk-h" d="M45.6 24.3c2.9-3 7.6-3 10.4 0 2.8 3 2.8 7.9 0 10.9l-9.2 9.8a1.6 1.6 0 0 1-2.4 0l-9.2-9.8c-2.8-3-2.8-7.9 0-10.9 2.8-3 7.5-3 10.4 0Z"
+              fill="#c07285"/>
       </symbol>
     </svg>
 
@@ -154,16 +162,16 @@
                 transition:transform .18s cubic-bezier(.22,1,.36,1), box-shadow .18s; }
     .deck-btn:hover { transform:translateY(-3px); box-shadow:var(--sh-lg); }
     .deck-btn:active { transform:scale(.9); }
-    .deck-btn-primary { background:var(--sunset); color:#fff; border:none; box-shadow:0 12px 28px -8px rgba(168,41,70,.65); }
+    .deck-btn-primary { background:var(--ember); color:#fff; border:none; box-shadow:var(--sh-md); }
     .tab-btn { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 9px 0 7px; color: var(--ink-mute); font-size: 10px; font-weight: 700; transition: color .15s; position:relative; }
     .tab-btn.active { color: var(--ember-deep); }
-    .tab-btn.active::before { content:''; position:absolute; top:0; left:50%; transform:translateX(-50%); width:26px; height:3px; border-radius:0 0 4px 4px; background:var(--sunset); }
+    .tab-btn.active::before { content:''; position:absolute; top:0; left:50%; transform:translateX(-50%); width:26px; height:3px; border-radius:0 0 4px 4px; background:var(--ember); }
     .tab-btn i { font-size: 20px; }
     .pref-chip { padding: 8px 17px; border-radius: 9999px; border: 1.5px solid var(--cream-warm); background:#fff; font-weight: 700; font-size: 13px; color: var(--ink-soft); transition: all .16s ease-out; cursor: pointer; }
     .pref-chip:hover { border-color: var(--ember-soft); color: var(--ember-deep); }
-    .pref-chip.on { background: var(--sunset); color: #fff; border-color: transparent; box-shadow:0 6px 16px -6px rgba(168,41,70,.55); }
+    .pref-chip.on { background: var(--plum); color: var(--cream); border-color: transparent; box-shadow:none; }
     .msg-in { background: #fff; color: var(--ink); border-radius: 20px 20px 20px 5px; box-shadow:var(--sh-sm); }
-    .msg-out { background: var(--sunset); color: #fff; border-radius: 20px 20px 5px 20px; box-shadow:0 6px 16px -6px rgba(168,41,70,.45); }
+    .msg-out { background: var(--plum); color: var(--cream); border-radius: 20px 20px 5px 20px; box-shadow:none; }
     @keyframes heartPop { 0%{transform:scale(0);opacity:0} 50%{transform:scale(1.25);opacity:1} 100%{transform:scale(1);opacity:1} }
     .heart-pop { animation: heartPop .5s cubic-bezier(.22,1,.36,1) forwards; }
     @keyframes floatUp { from{transform:translateY(0);opacity:.9} to{transform:translateY(-120px);opacity:0} }
@@ -199,9 +207,17 @@ const CONFIG = {
         premium_month: 100   // Chibwenzi Premium — unlimited, 30 days
     },
 
-    // Admin access: profiles whose id/email is listed here see the moderation queue.
-    // In production, enforce this with Firestore rules + custom claims, NOT just here.
-    ADMIN_IDS: ["admin"]
+    // LAUNCH OFFER — everything is free for everyone until this date, to solve
+    // the cold-start problem (a dating app is worthless while it's empty).
+    // Format YYYY-MM-DD. Set to "" to switch payments on.
+    LAUNCH_FREE_UNTIL: "2026-10-31",
+
+    // ADMIN ("god mode"): sign in with Google using one of these addresses to get
+    // full access — moderation queue, every profile, and all features unlocked.
+    // This is the UI gate only; Firestore rules enforce it for real via the
+    // `admin` custom claim (see firestore.rules + SETUP.md).
+    ADMIN_EMAILS: ["aaci.yoni@gmail.com"],
+    ADMIN_UIDS: []
 };
 
 /* ================================================================
@@ -223,21 +239,11 @@ const FIREBASE_CONFIG = {
 const FIREBASE_ON = true;
 
 /* ================================================================
-   SEED PROFILES — used in DEMO mode so the swipe deck isn't empty.
-   These are illustrative demo personas, not real people.
+   NO FAKE PROFILES. Everyone in the deck is a real, signed-up user loaded
+   from Firestore. Never reintroduce seeded personas — showing invented
+   people to paying users is deceptive and a real legal risk.
    ================================================================ */
-const SEED = [
-    { id:'s1', name:'Chanda', age:24, gender:'f', city:'Lusaka', verified:true, bio:'Nurse who loves nshima, gospel music and long drives. Looking for something real. 🙏', interests:['Music','Cooking','Church','Travel'], likesYou:true, photos:['https://picsum.photos/seed/zm-cf1/600/800','https://picsum.photos/seed/zm-cf1b/600/800'] },
-    { id:'s2', name:'Mutinta', age:27, gender:'f', city:'Lusaka', verified:true, bio:'Entrepreneur. I run a small salon in Kabulonga. Coffee, ambition and good vibes.', interests:['Business','Coffee','Fashion','Gym'], likesYou:false, photos:['https://picsum.photos/seed/zm-cf2/600/800'] },
-    { id:'s3', name:'Natasha', age:22, gender:'f', city:'Ndola', verified:false, bio:'UNZA student 📚. Netball on weekends. Make me laugh and you win.', interests:['Netball','Movies','Reading'], likesYou:true, photos:['https://picsum.photos/seed/zm-cf3/600/800'] },
-    { id:'s4', name:'Bupe', age:29, gender:'f', city:'Kitwe', verified:true, bio:'Accountant, foodie, and a proud auntie. No games, just genuine connection.', interests:['Food','Family','Music','Travel'], likesYou:false, photos:['https://picsum.photos/seed/zm-cf4/600/800'] },
-    { id:'s5', name:'Temwani', age:25, gender:'f', city:'Lusaka', verified:true, bio:'Teacher 🍎 Love sunsets at Kalimba, hiking and afrobeats.', interests:['Teaching','Hiking','Afrobeats','Nature'], likesYou:true, photos:['https://picsum.photos/seed/zm-cf5/600/800'] },
-    { id:'m1', name:'Mwamba', age:28, gender:'m', city:'Lusaka', verified:true, bio:'Engineer at heart, footballer on weekends ⚽. Family man in the making.', interests:['Football','Cars','Tech','Family'], likesYou:true, photos:['https://picsum.photos/seed/zm-cm1/600/800'] },
-    { id:'m2', name:'Kunda', age:31, gender:'m', city:'Lusaka', verified:true, bio:'Doctor. I value honesty, faith and a good sense of humour. Let\'s talk.', interests:['Medicine','Church','Reading','Chess'], likesYou:false, photos:['https://picsum.photos/seed/zm-cm2/600/800'] },
-    { id:'m3', name:'Chibwe', age:26, gender:'m', city:'Ndola', verified:false, bio:'Music producer 🎧 Copperbelt born. Ambitious and loyal.', interests:['Music','Production','Gym','Travel'], likesYou:true, photos:['https://picsum.photos/seed/zm-cm3/600/800'] },
-    { id:'m4', name:'Lubinda', age:30, gender:'m', city:'Livingstone', verified:true, bio:'Tour guide by the Falls 🌊 Adventurous, calm, and a great cook.', interests:['Adventure','Cooking','Nature','Photography'], likesYou:false, photos:['https://picsum.photos/seed/zm-cm4/600/800'] },
-    { id:'m5', name:'Taonga', age:27, gender:'m', city:'Kitwe', verified:true, bio:'Banker who loves braais, church and a good conversation. Serious dating only.', interests:['Finance','Braai','Church','Fitness'], likesYou:true, photos:['https://picsum.photos/seed/zm-cm5/600/800'] }
-];
+const SEED = [];
 
 const INTEREST_OPTIONS = ['Music','Movies','Travel','Cooking','Church','Gym','Football','Netball','Fashion','Business','Reading','Photography','Nature','Coffee','Family','Afrobeats','Gospel','Dancing','Food','Tech'];
 
@@ -247,7 +253,8 @@ const INTEREST_OPTIONS = ['Music','Movies','Travel','Cooking','Church','Gym','Fo
 const $ = id => document.getElementById(id);
 const app = $('app');
 let me = null;                 // current user profile
-let pool = [];                 // swipe candidates
+let pool = [];                 // swipe candidates (real users only)
+let poolLoading = false;
 let deckIndex = 0;
 let matches = [];              // [{id, profile, messages:[{from,text,at}]}]
 let reports = [];              // moderation queue (demo/local)
@@ -258,6 +265,26 @@ const DB = {
     load(k, d) { try { return JSON.parse(localStorage.getItem('chibwenzi_' + k)) ?? d; } catch { return d; } },
     save(k, v) { localStorage.setItem('chibwenzi_' + k, JSON.stringify(v)); }
 };
+
+// During the launch offer nobody pays and nothing is locked.
+function isLaunchFree() {
+    if (!CONFIG.LAUNCH_FREE_UNTIL) return false;
+    return Date.now() < new Date(CONFIG.LAUNCH_FREE_UNTIL + 'T23:59:59').getTime();
+}
+// Admin ("god mode") — identified by the Google account they signed in with.
+function isAdmin() {
+    const email = (FB.email || '').toLowerCase();
+    return (email && CONFIG.ADMIN_EMAILS.map(e => e.toLowerCase()).includes(email))
+        || (FB.uid && CONFIG.ADMIN_UIDS.includes(FB.uid));
+}
+// True when the user should have full access — admin, launch offer, or paid.
+function hasPremium() { return isAdmin() || isLaunchFree() || !!(me && me.premium); }
+function launchFreeEndsText() {
+    try {
+        return new Date(CONFIG.LAUNCH_FREE_UNTIL + 'T00:00:00')
+            .toLocaleDateString('en-GB', { day: 'numeric', month: 'long' });
+    } catch (e) { return CONFIG.LAUNCH_FREE_UNTIL; }
+}
 
 function todayStr() {
     // Local date key for the daily free-swipe reset
@@ -293,7 +320,7 @@ function showToast(msg, ms) {
    Firestore profiles drive real swipe→match→chat; SEED demo profiles
    keep the deck full during cold-start.
    ================================================================ */
-const FB = { on:false, uid:null, db:null, fs:null, msgUnsub:null };
+const FB = { on:false, uid:null, email:null, db:null, fs:null, auth:null, authMod:null, msgUnsub:null };
 
 async function fbInit() {
     if (!FIREBASE_ON || !FIREBASE_CONFIG.apiKey) return false;
@@ -307,10 +334,16 @@ async function fbInit() {
         const auth = authMod.getAuth(app);
         FB.fs = fsMod;
         FB.db = fsMod.getFirestore(app);
+        FB.auth = auth;
+        FB.authMod = authMod;
         await new Promise((resolve, reject) => {
             const t = setTimeout(() => reject(new Error('auth timeout')), 12000);
-            authMod.onAuthStateChanged(auth, u => { if (u) { FB.uid = u.uid; clearTimeout(t); resolve(); } });
-            authMod.signInAnonymously(auth).catch(reject);
+            authMod.onAuthStateChanged(auth, u => {
+                if (u) { FB.uid = u.uid; FB.email = u.email || null; clearTimeout(t); resolve(); }
+            });
+            // Anonymous gets people swiping instantly; they can attach Google later
+            // so the account survives a new phone or a cleared browser.
+            if (!auth.currentUser) authMod.signInAnonymously(auth).catch(reject);
         });
         FB.on = true;
         return true;
@@ -318,6 +351,40 @@ async function fbInit() {
         console.warn('Firebase unavailable → DEMO mode:', e && e.message);
         FB.on = false;
         return false;
+    }
+}
+
+/* Attach a Google account to the current (anonymous) user. Linking keeps the
+   same uid, so the profile, matches and chats all survive. If that Google
+   account already exists we sign into it instead. Also how an admin is
+   identified — see isAdmin(). */
+async function fbSignInWithGoogle() {
+    if (!FB.on) return showToast('Not connected — try again in a moment.');
+    const { GoogleAuthProvider, linkWithPopup, signInWithPopup } = FB.authMod;
+    const provider = new GoogleAuthProvider();
+    try {
+        let cred;
+        try {
+            cred = await linkWithPopup(FB.auth.currentUser, provider);
+        } catch (e) {
+            if (['auth/credential-already-in-use','auth/email-already-in-use','auth/provider-already-linked']
+                .includes(e.code)) {
+                cred = await signInWithPopup(FB.auth, provider);   // existing account
+            } else throw e;
+        }
+        FB.uid = cred.user.uid;
+        FB.email = cred.user.email || null;
+        const existing = await fbLoadProfile();
+        if (existing) me = Object.assign(freshUser(), me || {}, existing, { id: FB.uid, ageConfirmed: true, agreedTerms: true });
+        else if (me) { me.id = FB.uid; await fbSaveProfile(); }
+        saveMe();
+        showToast(isAdmin() ? 'Signed in as admin 🛡️' : 'Account saved — you can sign in from any phone ✓', 3400);
+        buildPool();
+        renderHome();
+    } catch (e) {
+        if (e.code === 'auth/popup-closed-by-user' || e.code === 'auth/cancelled-popup-request') return;
+        console.warn('google sign-in', e);
+        showToast('Sign-in failed. Please try again.', 3200);
     }
 }
 
@@ -437,6 +504,54 @@ async function fbSendMessage(match, text) {
     } catch (e) { console.warn('fbSendMessage', e && e.message); return false; }
 }
 
+// Everyone who has liked me and isn't matched with me yet.
+async function fbLoadLikers() {
+    if (!FB.on || !me) return [];
+    try {
+        const { collection, query, where, getDocs, doc, getDoc } = FB.fs;
+        const snap = await getDocs(query(collection(FB.db, 'swipes'), where('target', '==', FB.uid)));
+        const ids = snap.docs.map(d => d.data())
+            .filter(x => ['like','super'].includes(x.action))
+            .map(x => x.by)
+            .filter(id => !me.blockedIds.includes(id) && !matches.find(m => m.id === id));
+        const out = [];
+        for (const id of [...new Set(ids)].slice(0, 40)) {
+            const p = await getDoc(doc(FB.db, 'profiles', id));
+            if (p.exists()) out.push(Object.assign({ id, _real: true }, p.data()));
+        }
+        return out;
+    } catch (e) { console.warn('fbLoadLikers', e && e.message); return []; }
+}
+
+// Admin: pull the live moderation queue out of Firestore.
+async function fbLoadModeration() {
+    if (!FB.on || !isAdmin()) return null;
+    try {
+        const { collection, getDocs } = FB.fs;
+        const grab = async (name, type) => {
+            const snap = await getDocs(collection(FB.db, name));
+            return snap.docs.map(d => Object.assign({ _id: d.id, type }, d.data()));
+        };
+        const [reps, vers] = await Promise.all([grab('reports', 'report'), grab('verifications', 'verification')]);
+        return reps.concat(vers).sort((a, b) => (b.at || 0) - (a.at || 0));
+    } catch (e) { console.warn('fbLoadModeration', e && e.message); return null; }
+}
+// Admin: resolve an item in the queue.
+async function fbResolveModeration(coll, id, status) {
+    if (!FB.on) return;
+    try { const { doc, setDoc } = FB.fs; await setDoc(doc(FB.db, coll, id), { status }, { merge: true }); }
+    catch (e) { console.warn('fbResolveModeration', e && e.message); }
+}
+// Admin: every profile on the platform.
+async function fbLoadAllProfiles() {
+    if (!FB.on || !isAdmin()) return [];
+    try {
+        const { collection, getDocs } = FB.fs;
+        const snap = await getDocs(collection(FB.db, 'profiles'));
+        return snap.docs.map(d => Object.assign({ _id: d.id }, d.data()));
+    } catch (e) { console.warn('fbLoadAllProfiles', e && e.message); return []; }
+}
+
 // Write to a moderation collection (reports / verifications).
 async function fbModeration(coll, data) {
     if (!FB.on) return;
@@ -484,33 +599,29 @@ function saveReports() { DB.save('reports', reports); }
    ================================================================ */
 function renderAgeGate() {
     app.innerHTML = `
-    <div class="relative min-h-screen flex flex-col items-center justify-center px-7 text-center text-white overflow-hidden"
-         style="background:radial-gradient(120% 90% at 50% 0%, #4a1230 0%, #2b0a1e 45%, #1a0512 100%)">
-        <!-- ambient sunset glow -->
-        <div class="absolute -top-28 -right-24 w-80 h-80 rounded-full blur-3xl opacity-40" style="background:radial-gradient(circle,#f5a623,transparent 70%)"></div>
-        <div class="absolute -bottom-32 -left-24 w-80 h-80 rounded-full blur-3xl opacity-30" style="background:radial-gradient(circle,#e8556b,transparent 70%)"></div>
+    <div class="relative min-h-screen flex flex-col items-center justify-center px-7 text-center overflow-hidden"
+         style="background:var(--plum-deep); color:var(--cream)">
 
         <div class="relative rise-in">
-            <div class="brand-mark w-[68px] h-[68px] mx-auto"><svg><use href="#chibwenzi-mark"/></svg></div>
-            <h1 class="mt-3.5 wordmark text-[42px] leading-none grad-text">Chibwenzi</h1>
-            <p class="mt-2 text-white/55 text-[10px] font-bold tracking-[0.3em] uppercase">Find your person</p>
+            <div class="brand-mark w-[62px] h-[62px] mx-auto" style="background:transparent;box-shadow:none"><svg><use href="#chibwenzi-mark"/></svg></div>
+            <h1 class="mt-4 wordmark text-[40px] leading-none grad-text">Chibwenzi</h1>
+            <div class="mx-auto mt-3.5 h-px w-14" style="background:linear-gradient(90deg,transparent,var(--gold),transparent)"></div>
+            <p class="mt-3.5 text-[10px] font-semibold tracking-[0.32em] uppercase" style="color:var(--ink-mute)">Find your person</p>
         </div>
 
         <div class="relative mt-7 w-full max-w-sm rise-in" style="animation-delay:.12s">
-            <div class="bg-white/[0.07] backdrop-blur-xl border border-white/10 rounded-[24px] p-5 text-left"
-                 style="box-shadow:0 24px 60px -20px rgba(0,0,0,.7)">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-xl bg-gold/15 border border-gold/25 flex items-center justify-center text-gold-soft shrink-0"><i class="fas fa-shield-halved"></i></div>
-                    <h2 class="font-extrabold text-[17px] leading-tight">Are you 18 or older?</h2>
-                </div>
-                <p class="mt-2.5 text-white/70 text-[13px] leading-relaxed">Chibwenzi is strictly for adults. You must be at least ${CONFIG.MIN_AGE} to use this app.</p>
-                <button onclick="confirmAge()" class="btn-primary mt-4 w-full !py-3.5">Yes, I'm 18 or older</button>
-                <button onclick="denyAge()" class="mt-1 w-full text-white/50 text-[13px] py-2.5 hover:text-white/80 transition">No, I'm under 18</button>
+            <div class="rounded-[20px] p-5 text-left border" style="background:rgba(255,255,255,.035);border-color:rgba(255,255,255,.07)">
+                <h2 class="font-bold text-[16px] leading-tight">Are you 18 or older?</h2>
+                <p class="mt-2 text-[12.5px] leading-relaxed" style="color:var(--ink-mute)">Chibwenzi is strictly for adults. You must be at least ${CONFIG.MIN_AGE} to use this app.</p>
+                <button onclick="confirmAge()" class="mt-4 w-full font-bold rounded-full py-3.5 transition"
+                        style="background:var(--cream);color:var(--plum)"
+                        onmouseover="this.style.background='#fff'" onmouseout="this.style.background='var(--cream)'">Yes, I'm 18 or older</button>
+                <button onclick="denyAge()" class="mt-1 w-full text-[13px] py-2.5 transition" style="color:var(--ink-mute)">No, I'm under 18</button>
             </div>
         </div>
 
-        <p class="relative mt-4 text-[10.5px] text-white/40 leading-relaxed max-w-[19rem] rise-in" style="animation-delay:.2s">By continuing you agree to our <b class="text-white/60">Terms</b> &amp; <b class="text-white/60">Community Rules</b>. Fake or underage profiles are removed.</p>
-        <p class="relative mt-3 text-[9px] tracking-[0.2em] text-white/25 uppercase">an ORIZIS TECHNOLOGY product</p>
+        <p class="relative mt-5 text-[10.5px] leading-relaxed max-w-[19rem] rise-in" style="animation-delay:.2s;color:rgba(250,248,246,.35)">By continuing you agree to our <b style="color:rgba(250,248,246,.6)">Terms</b> &amp; <b style="color:rgba(250,248,246,.6)">Community Rules</b>. Fake or underage profiles are removed.</p>
+        <p class="relative mt-4 text-[9px] tracking-[0.22em] uppercase" style="color:rgba(250,248,246,.2)">an ORIZIS TECHNOLOGY product</p>
     </div>`;
 }
 function confirmAge() {
@@ -752,23 +863,18 @@ function finishOnboarding() {
 /* ================================================================
    POOL / DISCOVERY  (hetero-only pilot: opposite gender only)
    ================================================================ */
+// The deck contains only real, signed-up people (opposite gender, unseen).
 function buildPool() {
-    const seen = new Set([...me.likedIds, ...me.passedIds, ...me.superLikedIds, ...me.blockedIds]);
-    pool = SEED.filter(p =>
-        p.gender === me.seeking &&        // enforce opposite-gender matching
-        p.gender !== me.gender &&
-        !seen.has(p.id)
-    );
-    // Boosted / verified users float up a bit
-    pool.sort((a,b) => (b.verified?1:0) - (a.verified?1:0));
+    pool = [];
     deckIndex = 0;
-    // Real Firestore profiles load in and go to the front; SEED stays as filler.
-    if (FB.on) fbLoadPool().then(real => {
-        if (!real || !real.length) return;
-        const have = new Set(pool.map(p => p.id));
-        pool = real.filter(p => !have.has(p.id)).concat(pool.filter(p => !p._real));
+    poolLoading = true;
+    if (!FB.on) { poolLoading = false; return; }
+    fbLoadPool().then(real => {
+        pool = (real || []).sort((a, b) => (b.verified?1:0) - (a.verified?1:0));
+        deckIndex = 0;
+        poolLoading = false;
         if (activeTab === 'discover') renderDeck();
-    });
+    }).catch(() => { poolLoading = false; if (activeTab === 'discover') renderDeck(); });
 }
 
 /* ================================================================
@@ -784,7 +890,7 @@ function renderHome() {
             <button class="tab-btn ${activeTab==='likes'?'active':''}" onclick="switchTab('likes')"><i class="fas fa-star"></i>Likes</button>
             <button class="tab-btn relative ${activeTab==='matches'?'active':''}" onclick="switchTab('matches')"><i class="fas fa-heart"></i>Matches${matches.length?`<span class="absolute top-1 right-1/4 bg-rose-600 text-white text-[9px] rounded-full w-4 h-4 flex items-center justify-center">${matches.length}</span>`:''}</button>
             <button class="tab-btn ${activeTab==='profile'?'active':''}" onclick="switchTab('profile')"><i class="fas fa-user"></i>Profile</button>
-            ${CONFIG.ADMIN_IDS.includes(me.id)||me.id==='admin' ? `<button class="tab-btn ${activeTab==='admin'?'active':''}" onclick="switchTab('admin')"><i class="fas fa-shield-halved"></i>Admin</button>`:''}
+            ${isAdmin() ? `<button class="tab-btn ${activeTab==='admin'?'active':''}" onclick="switchTab('admin')"><i class="fas fa-shield-halved"></i>Admin</button>`:''}
         </nav>
     </div>`;
     renderTab();
@@ -818,7 +924,10 @@ function renderDiscover(s) {
     </header>
     <div class="px-4 text-[11px] text-slate-400 flex items-center justify-between -mt-1 mb-1">
         <span><i class="fas fa-location-dot mr-1 text-rose-400"></i>${me.city} · people near you</span>
-        <span>${me.premium?'<b class="text-ember-deep">Premium</b>':(CONFIG.FREE_SWIPES_PER_DAY - me.swipesToday) + ' free likes left'}</span>
+        <span>${isAdmin() ? '<b class="text-gold-deep"><i class="fas fa-shield-halved"></i> Admin</b>'
+            : isLaunchFree() ? '<b class="text-ember-deep"><i class="fas fa-gift"></i> Free until ' + launchFreeEndsText() + '</b>'
+            : me.premium ? '<b class="text-ember-deep">Premium</b>'
+            : (CONFIG.FREE_SWIPES_PER_DAY - me.swipesToday) + ' free likes left'}</span>
     </div>
     <div id="deck" class="relative flex-1 mx-4 mb-3"></div>
     <div class="flex items-center justify-center gap-5 pb-4">
@@ -833,12 +942,20 @@ function renderDeck() {
     if (!deck) return;
     const card = pool[deckIndex];
     if (!card) {
-        deck.innerHTML = `<div class="absolute inset-0 flex flex-col items-center justify-center text-center px-8">
-            <div class="text-5xl text-rose-200"><i class="fas fa-heart-circle-check"></i></div>
-            <h3 class="mt-4 font-bold text-lg">You're all caught up!</h3>
-            <p class="text-slate-500 text-sm mt-1">No more people in ${me.city} right now. Check back soon, or Boost to reach more.</p>
-            <button onclick="openBoost()" class="mt-4 bg-gradient-to-r from-purple-500 to-rose-500 text-white font-bold px-6 py-2.5 rounded-full text-sm"><i class="fas fa-bolt mr-1"></i>Boost me</button>
-            <button onclick="resetDeckDemo()" class="mt-2 text-xs text-slate-400 underline">Reset demo deck</button>
+        if (poolLoading) {
+            deck.innerHTML = `<div class="absolute inset-0 flex items-center justify-center"><div class="spinner"></div></div>`;
+            return;
+        }
+        // Genuinely nobody left. Chibwenzi is new, so say so plainly and turn
+        // the moment into an invite rather than pretending there are profiles.
+        const share = 'Join me on Chibwenzi — Zambia\'s own dating app 💚 https://chibwenzi.com';
+        deck.innerHTML = `<div class="absolute inset-0 flex flex-col items-center justify-center text-center px-7">
+            <div class="brand-mark w-16 h-16"><svg><use href="#chibwenzi-mark"/></svg></div>
+            <h3 class="mt-4 font-bold text-lg">No one new right now</h3>
+            <p class="text-slate-500 text-sm mt-1.5 leading-relaxed">Chibwenzi is just getting started in ${me.city}. Invite your friends — the more people here, the better your matches.</p>
+            <button onclick="shareInvite()" class="btn-primary mt-5 !py-3 !px-7"><i class="fas fa-user-plus mr-1.5"></i>Invite friends</button>
+            <button onclick="buildPool();renderDeck()" class="mt-2.5 text-xs text-slate-400 underline">Refresh</button>
+            <textarea id="shareText" class="sr-only" aria-hidden="true">${share}</textarea>
         </div>`;
         return;
     }
@@ -913,7 +1030,7 @@ function swipeBtn(action) {
 }
 function doSwipe(card, action) {
     // Free-swipe gate applies to right-swipes (like / super)
-    if ((action==='like'||action==='super') && !me.premium) {
+    if ((action==='like'||action==='super') && !hasPremium()) {
         if (me.swipesToday >= CONFIG.FREE_SWIPES_PER_DAY) {
             // revert card position
             renderDeck();
@@ -921,8 +1038,8 @@ function doSwipe(card, action) {
         }
     }
     if (action==='super') {
-        if (me.superLikes <= 0 && !me.premium) { renderDeck(); return openPaywall('superlike'); }
-        if (!me.premium) me.superLikes--;
+        if (me.superLikes <= 0 && !hasPremium()) { renderDeck(); return openPaywall('superlike'); }
+        if (!hasPremium()) me.superLikes--;
         me.superLikedIds.push(card.id);
     }
     if (action==='like'||action==='super') { me.likedIds.push(card.id); me.swipesToday++; }
@@ -942,6 +1059,16 @@ function doSwipe(card, action) {
     const matched = (action==='like'||action==='super') && card.likesYou;
     setTimeout(() => { finishUI(); if (matched) showMatch(card); }, 260);
 }
+// Growth loop: the empty deck is the best moment to ask for an invite.
+function shareInvite() {
+    const text = 'Join me on Chibwenzi — Zambia\'s own dating app 💚';
+    const url = 'https://chibwenzi.com';
+    if (navigator.share) {
+        navigator.share({ title: 'Chibwenzi', text, url }).catch(()=>{});
+    } else {
+        window.open('https://wa.me/?text=' + encodeURIComponent(text + ' ' + url), '_blank', 'noopener');
+    }
+}
 function resetDeckDemo() {
     me.likedIds=[]; me.passedIds=[]; me.superLikedIds=[]; saveMe();
     buildPool(); renderDiscover($('screen'));
@@ -959,22 +1086,20 @@ function showMatch(card) {
     saveMatches();
     const ov = document.createElement('div');
     ov.className = 'fixed inset-0 z-[80] flex flex-col items-center justify-center px-8 text-center text-white fade-in';
-    ov.style.background = 'radial-gradient(120% 80% at 50% 15%, #4a1230 0%, #2b0a1e 50%, #1a0512 100%)';
+    ov.style.background = 'var(--plum-deep)';
     ov.innerHTML = `
-        <div class="absolute top-1/4 -left-16 w-72 h-72 rounded-full blur-3xl opacity-30" style="background:radial-gradient(circle,#f5a623,transparent 70%)"></div>
-        <div class="absolute bottom-1/4 -right-16 w-72 h-72 rounded-full blur-3xl opacity-30" style="background:radial-gradient(circle,#e8556b,transparent 70%)"></div>
         <div class="relative">
-            <p class="text-gold-soft text-[11px] font-bold tracking-[0.32em] uppercase rise-in">Chibwenzi</p>
-            <p class="wordmark text-5xl mt-2 grad-text heart-pop">It's a Match!</p>
-            <p class="text-white/70 mt-3 rise-in" style="animation-delay:.1s">You and <b class="text-white">${card.name}</b> liked each other.</p>
-            <div class="flex items-center justify-center gap-4 mt-10 rise-in" style="animation-delay:.18s">
-                <img src="${me.photos[0]}" alt="" class="w-24 h-24 rounded-full object-cover border-[3px] border-white/85" style="box-shadow:var(--sh-lg)">
-                <div class="w-12 h-12 rounded-full flex items-center justify-center text-white text-lg shrink-0" style="background:var(--sunset);box-shadow:0 8px 20px -6px rgba(232,85,107,.8)"><i class="fas fa-heart"></i></div>
-                <img src="${card.photos[0]}" alt="" class="w-24 h-24 rounded-full object-cover border-[3px] border-white/85" style="box-shadow:var(--sh-lg)">
+            <p class="text-[10px] font-semibold tracking-[0.34em] uppercase rise-in" style="color:var(--gold)">Chibwenzi</p>
+            <p class="wordmark text-[44px] mt-2.5 leading-none heart-pop" style="color:var(--cream)">It's a match</p>
+            <p class="mt-3 text-[14px] rise-in" style="animation-delay:.1s;color:var(--ink-mute)">You and <b style="color:var(--cream)">${card.name}</b> liked each other.</p>
+            <div class="flex items-center justify-center gap-4 mt-11 rise-in" style="animation-delay:.18s">
+                <img src="${me.photos[0]}" alt="" class="w-24 h-24 rounded-full object-cover" style="border:2px solid rgba(250,248,246,.25)">
+                <div class="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style="background:var(--ember);color:#fff"><i class="fas fa-heart text-sm"></i></div>
+                <img src="${card.photos[0]}" alt="" class="w-24 h-24 rounded-full object-cover" style="border:2px solid rgba(250,248,246,.25)">
             </div>
             <div class="mt-12 w-full max-w-xs mx-auto rise-in" style="animation-delay:.26s">
-                <button onclick="this.closest('.fixed').remove(); openChatWith('${card.id}')" class="btn-primary w-full">Send a message</button>
-                <button onclick="this.closest('.fixed').remove()" class="mt-1.5 w-full text-white/50 text-sm py-3 hover:text-white/80 transition">Keep swiping</button>
+                <button onclick="this.closest('.fixed').remove(); openChatWith('${card.id}')" class="w-full font-bold rounded-full py-3.5 transition" style="background:var(--cream);color:var(--plum)">Send a message</button>
+                <button onclick="this.closest('.fixed').remove()" class="mt-1 w-full text-sm py-3 transition" style="color:var(--ink-mute)">Keep swiping</button>
             </div>
         </div>`;
     document.body.appendChild(ov);
@@ -983,14 +1108,19 @@ function showMatch(card) {
 /* ================================================================
    LIKES (Who liked you) — premium gated
    ================================================================ */
+let likersCache = null;   // people who liked me, loaded from Firestore
+
 function renderLikes(s) {
-    const likers = SEED.filter(p => p.likesYou && p.gender===me.seeking && !me.blockedIds.includes(p.id) && !matches.find(m=>m.id===p.id));
-    const unlocked = me.premium || DB.load('whoLiked', false);
+    const loading = likersCache === null;
+    const likers = likersCache || [];
+    likers.forEach(p => { if (!pool.find(x => x.id === p.id)) pool.push(p); }); // so openProfileCard can find them
+    const unlocked = hasPremium() || DB.load('whoLiked', false);
     s.innerHTML = `
     <header class="px-5 pt-5 pb-3"><h1 class="text-2xl font-display font-extrabold"><i class="fas fa-star text-gold mr-1"></i>Likes you</h1>
-        <p class="text-slate-500 text-sm">${likers.length} ${likers.length===1?'person likes':'people like'} you</p></header>
+        <p class="text-slate-500 text-sm">${loading ? 'Loading…' : likers.length + (likers.length===1?' person likes':' people like') + ' you'}</p></header>
     <div class="flex-1 overflow-y-auto px-4 pb-4 no-scrollbar">
-        ${likers.length===0 ? `<div class="text-center py-16 text-slate-400"><i class="fas fa-star text-4xl text-rose-100"></i><p class="mt-3 text-sm">No likes yet — keep an amazing profile!</p></div>` :
+        ${loading ? `<div class="py-16 text-center"><div class="spinner mx-auto"></div></div>` :
+        likers.length===0 ? `<div class="text-center py-16 text-slate-400"><i class="fas fa-star text-4xl text-rose-200"></i><p class="mt-3 text-sm">No likes yet — keep swiping and check back soon!</p></div>` :
         `<div class="grid grid-cols-2 gap-3">
             ${likers.map(p => `
             <div class="relative aspect-[3/4] rounded-2xl overflow-hidden shadow ${unlocked?'':'cursor-pointer'}" ${unlocked?`onclick="openProfileCard('${p.id}')"`:`onclick="openPaywall('wholiked')"`}>
@@ -1001,8 +1131,9 @@ function renderLikes(s) {
                 </div>
             </div>`).join('')}
         </div>
-        ${!unlocked?`<button onclick="openPaywall('wholiked')" class="mt-5 w-full bg-gradient-to-r from-rose-500 to-rose-600 text-white font-extrabold py-3.5 rounded-full shadow-lg"><i class="fas fa-eye mr-1"></i>See who likes you</button>`:''}`}
+        ${!unlocked?`<button onclick="openPaywall('wholiked')" class="btn-primary mt-5 w-full"><i class="fas fa-eye mr-1"></i>See who likes you</button>`:''}`}
     </div>`;
+    if (loading) fbLoadLikers().then(list => { likersCache = list; if (activeTab==='likes') renderTab(); });
 }
 
 /* ================================================================
@@ -1087,7 +1218,7 @@ function renderProfile(s) {
                 <h1 class="text-2xl font-extrabold">${me.name}, ${me.age}</h1>
                 <p class="text-white/80 text-sm"><i class="fas fa-location-dot mr-1"></i>${me.city}</p>
             </div>
-            ${me.premium?'<span class="absolute top-4 right-4 bg-gold text-black text-[11px] font-extrabold px-3 py-1 rounded-full"><i class="fas fa-crown"></i> PREMIUM</span>':''}
+            ${hasPremium()?'<span class="absolute top-4 right-4 bg-gold text-black text-[11px] font-extrabold px-3 py-1 rounded-full"><i class="fas fa-crown"></i> PREMIUM</span>':''}
         </div>
         <div class="px-5 -mt-4 relative">
             <div class="bg-white rounded-2xl shadow-sm p-4 text-sm text-slate-600">${me.bio || 'No bio yet.'}
@@ -1096,8 +1227,8 @@ function renderProfile(s) {
             </div>
         </div>
 
-        ${!me.premium?`
-        <div onclick="openPaywall('premium')" class="mx-5 mt-4 rounded-2xl p-4 bg-gradient-to-r from-rose-600 to-purple-600 text-white cursor-pointer">
+        ${!hasPremium()?`
+        <div onclick="openPaywall('premium')" class="mx-5 mt-4 rounded-2xl p-4 bg-plum text-white cursor-pointer">
             <div class="flex items-center justify-between">
                 <div><p class="font-extrabold"><i class="fas fa-crown mr-1 text-gold-soft"></i>Chibwenzi Premium</p>
                 <p class="text-xs text-rose-100 mt-0.5">Unlimited everything · <b>K${CONFIG.PRICES.premium_month}</b>/month</p></div>
@@ -1112,13 +1243,27 @@ function renderProfile(s) {
         </div>
 
         <div class="px-5 mt-5 space-y-1">
+            ${FB.email
+                ? `<div class="w-full flex items-center gap-3 px-4 py-3.5 bg-white rounded-xl text-left"><i class="fas fa-circle-check text-green-500 w-5"></i><div class="min-w-0"><p class="font-semibold text-sm leading-tight">Account saved</p><p class="text-[11px] text-slate-400 truncate">${FB.email}</p></div>${isAdmin()?'<span class="ml-auto text-[10px] font-extrabold bg-gold/20 text-gold-deep px-2 py-1 rounded-full">ADMIN</span>':''}</div>`
+                : `<button onclick="fbSignInWithGoogle()" class="w-full flex items-center gap-3 px-4 py-3.5 bg-white rounded-xl text-left"><i class="fab fa-google text-ember w-5"></i><div><p class="font-semibold text-sm leading-tight">Save my account</p><p class="text-[11px] text-slate-400">Sign in with Google so you never lose your profile</p></div><i class="fas fa-chevron-right ml-auto text-slate-300 text-xs"></i></button>`}
             <button onclick="onbStep=0;renderOnboarding()" class="w-full flex items-center gap-3 px-4 py-3.5 bg-white rounded-xl text-left"><i class="fas fa-pen text-ember w-5"></i><span class="font-semibold text-sm">Edit profile</span><i class="fas fa-chevron-right ml-auto text-slate-300 text-xs"></i></button>
             <button onclick="openSafety()" class="w-full flex items-center gap-3 px-4 py-3.5 bg-white rounded-xl text-left"><i class="fas fa-shield-halved text-ember w-5"></i><span class="font-semibold text-sm">Safety center</span><i class="fas fa-chevron-right ml-auto text-slate-300 text-xs"></i></button>
             <a href="https://wa.me/${CONFIG.WHATSAPP_SUPPORT}" target="_blank" rel="noopener" class="w-full flex items-center gap-3 px-4 py-3.5 bg-white rounded-xl text-left"><i class="fab fa-whatsapp text-green-500 w-5"></i><span class="font-semibold text-sm">Contact support</span><i class="fas fa-chevron-right ml-auto text-slate-300 text-xs"></i></a>
             <button onclick="openLegal()" class="w-full flex items-center gap-3 px-4 py-3.5 bg-white rounded-xl text-left"><i class="fas fa-file-lines text-ember w-5"></i><span class="font-semibold text-sm">Terms &amp; Privacy</span><i class="fas fa-chevron-right ml-auto text-slate-300 text-xs"></i></button>
             <button onclick="logout()" class="w-full flex items-center gap-3 px-4 py-3.5 bg-white rounded-xl text-left text-red-500"><i class="fas fa-right-from-bracket w-5"></i><span class="font-semibold text-sm">Log out / reset</span></button>
         </div>
-        <p class="text-center text-[10px] text-slate-300 mt-6">Chibwenzi · an ORIZIS TECHNOLOGY product</p>
+        <!-- Legal / compliance links, required on every ORIZIS Zambia site -->
+        <div class="mt-7 px-5 text-center">
+            <div class="flex flex-wrap justify-center gap-x-4 gap-y-1.5 text-[11px]" style="color:var(--ink-mute)">
+                <a href="terms.html" class="hover:underline">Terms</a>
+                <a href="privacy.html" class="hover:underline">Privacy</a>
+                <a href="refunds.html" class="hover:underline">Refunds</a>
+                <a href="accessibility.html" class="hover:underline">Accessibility</a>
+                <a href="mailto:office@orizisgroup.com" class="hover:underline">Contact</a>
+            </div>
+            <p class="mt-2.5 text-[10px] leading-relaxed" style="color:var(--ink-mute)">ORIZIS TECHNOLOGIES LIMITED · TPIN 2002580846<br>office@orizisgroup.com</p>
+            <p class="mt-3 text-[10px] tracking-[0.18em] uppercase" style="color:#c9c0c5">Chibwenzi · an ORIZIS TECHNOLOGY product</p>
+        </div>
     </div>`;
 }
 function logout() {
@@ -1131,7 +1276,7 @@ function logout() {
    PROFILE CARD (detail view)
    ================================================================ */
 function openProfileCard(id) {
-    const p = SEED.find(x=>x.id===id) || (matches.find(m=>m.id===id)||{}).profile;
+    const p = pool.find(x=>x.id===id) || (matches.find(m=>m.id===id)||{}).profile;
     if (!p) return;
     const ov = document.createElement('div');
     ov.className='fixed inset-0 z-[75] bg-black/60 flex items-end sm:items-center justify-center';
@@ -1175,7 +1320,7 @@ function openSafety() {
 }
 function reportUser(id) { reportProfile(id); }
 function reportProfile(id) {
-    const p = SEED.find(x=>x.id===id) || (matches.find(m=>m.id===id)||{}).profile || {name:'this user', id};
+    const p = pool.find(x=>x.id===id) || (matches.find(m=>m.id===id)||{}).profile || {name:'this user', id};
     const reasons = ['Fake profile / catfish','Asking for money / scam','Harassment or abuse','Inappropriate photos','Under 18','Other'];
     const ov = document.createElement('div');
     ov.className='fixed inset-0 z-[85] bg-black/60 flex items-end justify-center';
@@ -1233,6 +1378,8 @@ function openLegal() {
    MONETIZATION — paywall + pawaPay (server-verified)
    ================================================================ */
 function openPaywall(kind) {
+    // During the launch offer there is nothing to sell — everything is already open.
+    if (isLaunchFree()) return showLaunchFreeNote();
     const P = CONFIG.PRICES;
     // One plan, one price — every entry point sells the same K100 subscription.
     const PERKS = ['Unlimited likes — swipe as much as you want',
@@ -1337,6 +1484,29 @@ async function submitPay(sku, amount) {
         payFailed();
     } catch(e) { payFailed(); }
 }
+// Launch-offer explainer, shown wherever a paywall would normally appear.
+function showLaunchFreeNote() {
+    const ov = document.createElement('div');
+    ov.className = 'fixed inset-0 z-[85] bg-black/60 flex items-end justify-center';
+    ov.onclick = e => { if (e.target === ov) ov.remove(); };
+    ov.innerHTML = `<div class="bg-white w-full max-w-md rounded-t-3xl overflow-hidden fade-in">
+        <div class="p-7 text-center" style="background:var(--plum);color:var(--cream)">
+            <div class="text-4xl text-gold-soft"><i class="fas fa-gift"></i></div>
+            <h2 class="text-xl font-extrabold mt-2.5">It's all free right now! 🎉</h2>
+            <p class="text-white/85 text-sm mt-1.5">Chibwenzi is free for everyone until <b>${launchFreeEndsText()}</b>.</p>
+        </div>
+        <div class="p-6">
+            <ul class="space-y-2.5 text-sm">
+                <li class="flex items-center gap-2.5"><i class="fas fa-circle-check text-ember"></i>Unlimited likes</li>
+                <li class="flex items-center gap-2.5"><i class="fas fa-circle-check text-ember"></i>See everyone who likes you</li>
+                <li class="flex items-center gap-2.5"><i class="fas fa-circle-check text-ember"></i>Unlimited Super Likes &amp; Boost</li>
+            </ul>
+            <p class="text-xs text-slate-400 mt-4 text-center">No payment needed. Invite your friends — the more people here, the better your matches.</p>
+            <button onclick="this.closest('.fixed').remove()" class="btn-primary mt-5 w-full">Start swiping</button>
+        </div>
+    </div>`;
+    document.body.appendChild(ov);
+}
 function payFailed() {
     const m = $('payModal'); if (m) m.remove();
     showToast('Payment not completed. Please try again.', 3000);
@@ -1376,40 +1546,96 @@ function openBoost() { openPaywall(me.premium?'boost':'boost'); }
 /* ================================================================
    ADMIN MODERATION QUEUE
    ================================================================ */
+let modQueue = null;      // live Firestore queue
+let allProfiles = null;   // every profile, for the admin roster
+
 function renderAdmin(s) {
-    const openReports = reports.filter(r=>r.type==='report');
-    const verifs = reports.filter(r=>r.type==='verification');
+    if (!isAdmin()) { activeTab = 'discover'; return renderTab(); }
+
+    const q = modQueue || [];
+    const openReports = q.filter(r => r.type === 'report');
+    const verifs = q.filter(r => r.type === 'verification');
+    const loading = modQueue === null;
+
     s.innerHTML = `
-    <header class="px-5 pt-5 pb-3"><h1 class="text-2xl font-display font-extrabold"><i class="fas fa-shield-halved text-ember-deep mr-1"></i>Moderation</h1>
-        <p class="text-slate-500 text-sm">Reports &amp; verification queue</p></header>
+    <header class="px-5 pt-5 pb-3 flex items-start justify-between">
+        <div>
+            <h1 class="text-2xl font-display font-extrabold"><i class="fas fa-shield-halved text-ember-deep mr-1"></i>Moderation</h1>
+            <p class="text-slate-500 text-sm">Live queue · signed in as admin</p>
+        </div>
+        <button onclick="refreshAdmin()" class="text-ember-deep text-lg w-10 h-10" aria-label="Refresh"><i class="fas fa-rotate"></i></button>
+    </header>
     <div class="flex-1 overflow-y-auto no-scrollbar px-4 pb-6 space-y-5">
+        ${loading ? `<div class="py-10 text-center"><div class="spinner mx-auto"></div></div>` : `
+        <div class="grid grid-cols-3 gap-2 text-center">
+            <div class="bg-white rounded-xl py-3 shadow-sm"><p class="text-lg font-extrabold text-ember-deep">${(allProfiles||[]).length}</p><p class="text-[10px] text-slate-400 font-bold">USERS</p></div>
+            <div class="bg-white rounded-xl py-3 shadow-sm"><p class="text-lg font-extrabold text-red-500">${openReports.filter(r=>r.status==='open').length}</p><p class="text-[10px] text-slate-400 font-bold">OPEN REPORTS</p></div>
+            <div class="bg-white rounded-xl py-3 shadow-sm"><p class="text-lg font-extrabold text-amber-500">${verifs.filter(r=>r.status==='pending').length}</p><p class="text-[10px] text-slate-400 font-bold">TO VERIFY</p></div>
+        </div>
+
         <div>
-            <h3 class="font-bold text-sm text-slate-500 mb-2">⚠️ Reports (${openReports.filter(r=>r.status==='open').length} open)</h3>
-            ${openReports.length===0?`<p class="text-slate-400 text-sm">No reports.</p>`:openReports.map((r,i)=>`
+            <h3 class="font-bold text-sm text-slate-500 mb-2">⚠️ Reports</h3>
+            ${openReports.length===0?`<p class="text-slate-400 text-sm">No reports.</p>`:openReports.map(r=>`
                 <div class="bg-white rounded-xl p-3 mb-2 shadow-sm">
-                    <div class="flex items-center justify-between"><span class="font-bold text-sm">${r.targetName}</span><span class="text-[10px] px-2 py-0.5 rounded-full ${r.status==='open'?'bg-red-100 text-red-600':'bg-green-100 text-green-600'}">${r.status}</span></div>
-                    <p class="text-xs text-slate-500 mt-1">Reason: <b>${r.reason}</b></p>
-                    ${r.status==='open'?`<div class="flex gap-2 mt-2"><button onclick="modAction(${reports.indexOf(r)},'ban')" class="flex-1 bg-red-500 text-white text-xs font-bold py-2 rounded-lg">Remove user</button><button onclick="modAction(${reports.indexOf(r)},'dismiss')" class="flex-1 bg-slate-100 text-slate-600 text-xs font-bold py-2 rounded-lg">Dismiss</button></div>`:''}
+                    <div class="flex items-center justify-between"><span class="font-bold text-sm">${r.targetName||'Unknown'}</span><span class="text-[10px] px-2 py-0.5 rounded-full ${r.status==='open'?'bg-red-100 text-red-600':'bg-green-100 text-green-600'}">${r.status}</span></div>
+                    <p class="text-xs text-slate-500 mt-1">Reason: <b>${r.reason||'—'}</b></p>
+                    ${r.status==='open'?`<div class="flex gap-2 mt-2">
+                        <button onclick="modResolve('reports','${r._id}','removed','${(r.targetId||'')}')" class="flex-1 bg-red-500 text-white text-xs font-bold py-2 rounded-lg">Remove user</button>
+                        <button onclick="modResolve('reports','${r._id}','dismissed')" class="flex-1 bg-slate-100 text-slate-600 text-xs font-bold py-2 rounded-lg">Dismiss</button>
+                    </div>`:''}
                 </div>`).join('')}
         </div>
+
         <div>
-            <h3 class="font-bold text-sm text-slate-500 mb-2">✓ Verifications (${verifs.filter(r=>r.status==='pending').length} pending)</h3>
+            <h3 class="font-bold text-sm text-slate-500 mb-2">✓ Verifications</h3>
             ${verifs.length===0?`<p class="text-slate-400 text-sm">No verification requests.</p>`:verifs.map(r=>`
-                <div class="bg-white rounded-xl p-3 mb-2 shadow-sm flex items-center justify-between">
-                    <span class="font-bold text-sm">${r.name}</span>
-                    ${r.status==='pending'?`<div class="flex gap-2"><button onclick="modAction(${reports.indexOf(r)},'approve')" class="bg-green-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg">Approve</button><button onclick="modAction(${reports.indexOf(r)},'reject')" class="bg-slate-100 text-slate-600 text-xs font-bold px-3 py-1.5 rounded-lg">Reject</button></div>`:`<span class="text-[10px] px-2 py-0.5 rounded-full bg-green-100 text-green-600">${r.status}</span>`}
+                <div class="bg-white rounded-xl p-3 mb-2 shadow-sm flex items-center gap-3">
+                    ${r.selfie?`<img src="${r.selfie}" alt="" class="w-12 h-12 rounded-lg object-cover shrink-0">`:''}
+                    <span class="font-bold text-sm flex-1">${r.name||'Unknown'}</span>
+                    ${r.status==='pending'?`<div class="flex gap-2">
+                        <button onclick="modResolve('verifications','${r._id}','approved','${(r.userId||'')}')" class="bg-green-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg">Approve</button>
+                        <button onclick="modResolve('verifications','${r._id}','rejected','${(r.userId||'')}')" class="bg-slate-100 text-slate-600 text-xs font-bold px-3 py-1.5 rounded-lg">Reject</button>
+                    </div>`:`<span class="text-[10px] px-2 py-0.5 rounded-full bg-green-100 text-green-600">${r.status}</span>`}
                 </div>`).join('')}
         </div>
-        <p class="text-[11px] text-slate-400 bg-cream rounded-xl p-3"><i class="fas fa-circle-info mr-1"></i>Demo queue (local). In production this reads Firestore <b>reports</b> &amp; <b>verifications</b>, protected by admin-only security rules.</p>
+
+        <div>
+            <h3 class="font-bold text-sm text-slate-500 mb-2">👥 All users</h3>
+            ${(allProfiles||[]).length===0?`<p class="text-slate-400 text-sm">No users yet.</p>`:(allProfiles||[]).map(p=>`
+                <div class="bg-white rounded-xl p-2.5 mb-2 shadow-sm flex items-center gap-3">
+                    <img src="${(p.photos&&p.photos[0])||''}" alt="" class="w-11 h-11 rounded-lg object-cover bg-cream-warm shrink-0">
+                    <div class="min-w-0 flex-1">
+                        <p class="font-bold text-sm truncate">${p.name||'—'}${p.age?', '+p.age:''} ${p.verified?'<i class="fas fa-circle-check text-blue-400 text-xs"></i>':''}</p>
+                        <p class="text-[11px] text-slate-400 truncate">${p.gender==='f'?'Woman':'Man'} · ${p.city||'—'}</p>
+                    </div>
+                </div>`).join('')}
+        </div>
+
+        <p class="text-[11px] text-slate-400 bg-cream-warm rounded-xl p-3"><i class="fas fa-lock mr-1"></i>Private chats between users are deliberately not shown here. Reported conversations still surface through reports.</p>
+        `}
     </div>`;
+
+    if (loading) refreshAdmin();
 }
-function modAction(i, action) {
-    const r = reports[i]; if (!r) return;
-    if (action==='ban') { r.status='removed'; showToast('User removed'); }
-    else if (action==='dismiss') { r.status='dismissed'; }
-    else if (action==='approve') { r.status='approved'; if(r.userId===me.id){me.verified=true;me.verifyStatus='approved';saveMe();} }
-    else if (action==='reject') { r.status='rejected'; if(r.userId===me.id){me.verifyStatus='rejected';saveMe();} }
-    saveReports(); renderAdmin($('screen'));
+
+async function refreshAdmin() {
+    const [q, ps] = await Promise.all([fbLoadModeration(), fbLoadAllProfiles()]);
+    modQueue = q || [];
+    allProfiles = ps || [];
+    if (activeTab === 'admin') renderAdmin($('screen'));
+}
+
+async function modResolve(coll, id, status, targetId) {
+    await fbResolveModeration(coll, id, status);
+    if (coll === 'verifications' && targetId === FB.uid) {
+        me.verified = (status === 'approved');
+        me.verifyStatus = status;
+        saveMe();
+    }
+    const item = (modQueue || []).find(x => x._id === id);
+    if (item) item.status = status;
+    showToast(status === 'removed' ? 'User removed' : 'Marked ' + status);
+    renderAdmin($('screen'));
 }
 
 /* ================================================================
@@ -1422,6 +1648,6 @@ if ('serviceWorker' in navigator) {
 boot();
 </script>
 <!--reljob-legal-injected-->
-<div style="font-family:system-ui,sans-serif;font-size:12.5px;color:#8a8f99;text-align:center;padding:16px 12px;background:#0f1116;border-top:1px solid #23262e"><a href="terms.html" style="color:#aeb4bf;margin:0 8px;text-decoration:none">Terms</a><a href="privacy.html" style="color:#aeb4bf;margin:0 8px;text-decoration:none">Privacy</a><a href="refunds.html" style="color:#aeb4bf;margin:0 8px;text-decoration:none">Refunds</a><a href="accessibility.html" style="color:#aeb4bf;margin:0 8px;text-decoration:none">Accessibility</a><a href="mailto:office@orizisgroup.com" style="color:#aeb4bf;margin:0 8px;text-decoration:none">Contact</a><div style="margin-top:6px;color:#5c616b">ORIZIS TECHNOLOGIES LIMITED &middot; TPIN 2002580846 &middot; office@orizisgroup.com</div></div>
+
 </body>
 </html>
