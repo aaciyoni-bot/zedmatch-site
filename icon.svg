@@ -1,7 +1,26 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 64 64">
-  <rect width="64" height="64" rx="14" fill="#241a20"/>
-  <g transform="translate(32,32) scale(0.8) translate(-32,-32)">
-    <path d="M45 17.5a20.5 20.5 0 1 0 0 29" fill="none" stroke="#c2a06a" stroke-width="5" stroke-linecap="round"/>
-    <path d="M45.6 24.3c2.9-3 7.6-3 10.4 0 2.8 3 2.8 7.9 0 10.9l-9.2 9.8a1.6 1.6 0 0 1-2.4 0l-9.2-9.8c-2.8-3-2.8-7.9 0-10.9 2.8-3 7.5-3 10.4 0Z" fill="#c07285"/>
-  </g>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+<defs>
+            <linearGradient id="cb-heart" x1="0.1" y1="0" x2="0.9" y2="1">
+              <stop offset="0" stop-color="#ffb08c"></stop><stop offset="0.3" stop-color="#ff7a7a"></stop><stop offset="0.62" stop-color="#f0225f"></stop><stop offset="1" stop-color="#b40b40"></stop>
+            </linearGradient>
+            <linearGradient id="cb-heart2" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#ff9a8b"></stop><stop offset="0.55" stop-color="#ff4d6d"></stop><stop offset="1" stop-color="#c81049"></stop>
+            </linearGradient>
+            <mask id="cb-mask">
+              <rect x="0" y="0" width="1024" height="1024" fill="#fff"></rect>
+              <path d="M512 900 C258 726 128 566 128 404 C128 252 246 152 372 152 C452 152 496 196 512 240 C528 196 572 152 652 152 C778 152 896 252 896 404 C896 566 766 726 512 900 Z" fill="#000" transform="translate(512 470) scale(0.52) translate(-512 -470)"></path>
+              <path d="M556 372 H1010 V636 H556 Z" fill="#000"></path>
+            </mask>
+            <filter id="cb-sh" x="-30%" y="-30%" width="160%" height="160%">
+              <feDropShadow dx="0" dy="20" stdDeviation="24" flood-color="#780026" flood-opacity="0.32"></feDropShadow>
+            </filter>
+          </defs>
+          <g filter="url(#cb-sh)" mask="url(#cb-mask)">
+            <path d="M512 900 C258 726 128 566 128 404 C128 252 246 152 372 152 C452 152 496 196 512 240 C528 196 572 152 652 152 C778 152 896 252 896 404 C896 566 766 726 512 900 Z" fill="url(#cb-heart)"></path>
+            <path d="M372 152 C246 152 128 252 128 404 C128 500 174 590 262 686 C214 578 206 470 236 386 C266 302 320 236 400 200 Z" fill="#ffffff" opacity="0.22"></path>
+          </g>
+          <g filter="url(#cb-sh)">
+            <path d="M760 866 C650 790 596 720 596 654 C596 590 646 550 700 550 C734 550 752 570 760 590 C768 570 786 550 820 550 C874 550 924 590 924 654 C924 720 870 790 760 866 Z" fill="url(#cb-heart2)"></path>
+            <path d="M700 550 C646 550 596 590 596 654 C596 694 616 730 656 774 C634 726 630 680 644 644 C660 606 682 578 716 562 Z" fill="#ffffff" opacity="0.24"></path>
+          </g>
 </svg>
