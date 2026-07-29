@@ -570,7 +570,7 @@ function renderAgeGate() {
          style="background:var(--plum-deep); color:var(--cream)">
 
         <div class="relative rise-in">
-            <div class="brand-mark w-[62px] h-[62px] mx-auto" style="background:transparent;box-shadow:none"><svg><use href="#chibwenzi-mark"/></svg></div>
+            <img src="icon.svg" alt="Chibwenzi" class="w-[62px] h-[62px] mx-auto object-contain">
             <h1 class="mt-4 wordmark text-[40px] leading-none grad-text">Chibwenzi</h1>
             <div class="mx-auto mt-3.5 h-px w-14" style="background:linear-gradient(90deg,transparent,var(--gold),transparent)"></div>
             <p class="mt-3.5 text-[10px] font-semibold tracking-[0.32em] uppercase" style="color:var(--ink-mute)">Find your person</p>
@@ -880,7 +880,7 @@ function renderDiscover(s) {
     s.innerHTML = `
     <header class="px-4 pt-4 pb-2 flex items-center justify-between">
         <div class="flex items-center gap-2.5">
-            <div class="brand-mark w-9 h-9"><svg><use href="#chibwenzi-mark"/></svg></div>
+            <img src="icon.svg" alt="Chibwenzi" class="w-9 h-9 object-contain">
             <h1 class="wordmark text-[22px] text-plum">Chibwenzi</h1>
         </div>
         <div class="flex items-center gap-2">
@@ -917,7 +917,7 @@ function renderDeck() {
         // the moment into an invite rather than pretending there are profiles.
         const share = 'Join me on Chibwenzi — Zambia\'s own dating app 💚 https://chibwenzi.com';
         deck.innerHTML = `<div class="absolute inset-0 flex flex-col items-center justify-center text-center px-7">
-            <div class="brand-mark w-16 h-16"><svg><use href="#chibwenzi-mark"/></svg></div>
+            <img src="icon.svg" alt="Chibwenzi" class="w-16 h-16 object-contain">
             <h3 class="mt-4 font-bold text-lg">No one new right now</h3>
             <p class="text-slate-500 text-sm mt-1.5 leading-relaxed">Chibwenzi is just getting started in ${me.city}. Invite your friends — the more people here, the better your matches.</p>
             <button onclick="shareInvite()" class="btn-primary mt-5 !py-3 !px-7"><i class="fas fa-user-plus mr-1.5"></i>Invite friends</button>
