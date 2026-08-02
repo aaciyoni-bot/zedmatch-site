@@ -471,6 +471,56 @@ async function fbSendMessage(match, text) {
     } catch (e) { console.warn('fbSendMessage', e && e.message); return false; }
 }
 
+/* Permanently erase this account. Required by Google Play, and promised in the
+   privacy policy: profile, photos, selfie, swipes, matches and sent messages
+   all go. Reports about the user are intentionally left for moderation. */
+async function fbDeleteAccount() {
+    if (!FB.on) return false;
+    const { doc, deleteDoc, collection, query, where, getDocs } = FB.fs;
+    const del = async (ref) => { try { await deleteDoc(ref); } catch (e) {} };
+    try {
+        // swipes I made
+        const mine = await getDocs(query(collection(FB.db, 'swipes'), where('by', '==', FB.uid)));
+        for (const d of mine.docs) await del(d.ref);
+        // matches I'm in
+        const ms = await getDocs(query(collection(FB.db, 'matches'), where('users', 'array-contains', FB.uid)));
+        for (const d of ms.docs) await del(d.ref);
+        // messages I sent
+        const msgs = await getDocs(query(collection(FB.db, 'messages'), where('participants', 'array-contains', FB.uid)));
+        for (const d of msgs.docs) if (d.data().from === FB.uid) await del(d.ref);
+        // the profile itself
+        await del(doc(FB.db, 'profiles', FB.uid));
+        // finally the auth user (best-effort: may need a recent sign-in)
+        try { await FB.auth.currentUser.delete(); } catch (e) {}
+        return true;
+    } catch (e) { console.warn('fbDeleteAccount', e && e.message); return false; }
+}
+
+function confirmDeleteAccount() {
+    const ov = document.createElement('div');
+    ov.className = 'fixed inset-0 z-[90] bg-black/60 flex items-end justify-center';
+    ov.onclick = e => { if (e.target === ov) ov.remove(); };
+    ov.innerHTML = `<div class="bg-white w-full max-w-md rounded-t-3xl p-6 fade-in">
+        <div class="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-4"></div>
+        <h2 class="text-lg font-extrabold text-red-600"><i class="fas fa-triangle-exclamation mr-1.5"></i>Delete your account?</h2>
+        <p class="text-sm text-slate-600 mt-2.5 leading-relaxed">This permanently deletes your profile, photos, likes, matches and messages. <b>It cannot be undone.</b></p>
+        <button onclick="doDeleteAccount(this)" class="mt-5 w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3.5 rounded-full transition">Yes, delete everything</button>
+        <button onclick="this.closest('.fixed').remove()" class="mt-1 w-full text-slate-400 text-sm py-3">Cancel</button>
+    </div>`;
+    document.body.appendChild(ov);
+}
+
+async function doDeleteAccount(btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner inline-block !w-4 !h-4 !border-2 align-middle mr-2"></span> Deleting…';
+    await fbDeleteAccount();
+    localStorage.clear();
+    document.querySelectorAll('.fixed').forEach(x => x.remove());
+    me = null; matches = []; pool = []; likersCache = null; activeTab = 'discover'; onbStep = 0;
+    showToast('Your account has been deleted.', 4000);
+    setTimeout(() => location.reload(), 900);
+}
+
 // Everyone who has liked me and isn't matched with me yet.
 async function fbLoadLikers() {
     if (!FB.on || !me) return [];
@@ -1217,13 +1267,15 @@ function renderProfile(s) {
             <button onclick="openSafety()" class="w-full flex items-center gap-3 px-4 py-3.5 bg-white rounded-xl text-left"><i class="fas fa-shield-halved text-ember w-5"></i><span class="font-semibold text-sm">Safety center</span><i class="fas fa-chevron-right ml-auto text-slate-300 text-xs"></i></button>
             <a href="https://wa.me/${CONFIG.WHATSAPP_SUPPORT}" target="_blank" rel="noopener" class="w-full flex items-center gap-3 px-4 py-3.5 bg-white rounded-xl text-left"><i class="fab fa-whatsapp text-green-500 w-5"></i><span class="font-semibold text-sm">Contact support</span><i class="fas fa-chevron-right ml-auto text-slate-300 text-xs"></i></a>
             <button onclick="openLegal()" class="w-full flex items-center gap-3 px-4 py-3.5 bg-white rounded-xl text-left"><i class="fas fa-file-lines text-ember w-5"></i><span class="font-semibold text-sm">Terms &amp; Privacy</span><i class="fas fa-chevron-right ml-auto text-slate-300 text-xs"></i></button>
-            <button onclick="logout()" class="w-full flex items-center gap-3 px-4 py-3.5 bg-white rounded-xl text-left text-red-500"><i class="fas fa-right-from-bracket w-5"></i><span class="font-semibold text-sm">Log out / reset</span></button>
+            <button onclick="logout()" class="w-full flex items-center gap-3 px-4 py-3.5 bg-white rounded-xl text-left"><i class="fas fa-right-from-bracket text-ink-soft w-5"></i><span class="font-semibold text-sm">Log out</span></button>
+            <button onclick="confirmDeleteAccount()" class="w-full flex items-center gap-3 px-4 py-3.5 bg-white rounded-xl text-left text-red-600"><i class="fas fa-trash-can w-5"></i><span class="font-semibold text-sm">Delete my account</span></button>
         </div>
         <!-- Legal / compliance links, required on every ORIZIS Zambia site -->
         <div class="mt-7 px-5 text-center">
             <div class="flex flex-wrap justify-center gap-x-4 gap-y-1.5 text-[11px]" style="color:var(--ink-mute)">
                 <a href="terms.html" class="hover:underline">Terms</a>
                 <a href="privacy.html" class="hover:underline">Privacy</a>
+                <a href="community-guidelines.html" class="hover:underline">Community Rules</a>
                 <a href="refunds.html" class="hover:underline">Refunds</a>
                 <a href="accessibility.html" class="hover:underline">Accessibility</a>
                 <a href="mailto:office@orizisgroup.com" class="hover:underline">Contact</a>
