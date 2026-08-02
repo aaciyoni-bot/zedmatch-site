@@ -174,6 +174,10 @@ const CONFIG = {
         premium_month: 100   // Chibwenzi Premium — unlimited, 30 days
     },
 
+    // Pre-launch: shows a small "test version" notice while we wait for the legal
+    // review. Set to false on launch day.
+    PRELAUNCH: true,
+
     // LAUNCH OFFER — everything is free for everyone until this date, to solve
     // the cold-start problem (a dating app is worthless while it's empty).
     // Format YYYY-MM-DD. Set to "" to switch payments on.
@@ -638,7 +642,8 @@ function renderAgeGate() {
         </div>
 
         <p class="relative mt-5 text-[10.5px] leading-relaxed max-w-[19rem] rise-in" style="animation-delay:.2s;color:rgba(250,248,246,.35)">By continuing you agree to our <b style="color:rgba(250,248,246,.6)">Terms</b> &amp; <b style="color:rgba(250,248,246,.6)">Community Rules</b>. Fake or underage profiles are removed.</p>
-        <p class="relative mt-4 text-[9px] tracking-[0.22em] uppercase" style="color:rgba(250,248,246,.2)">an ORIZIS TECHNOLOGY product</p>
+        ${CONFIG.PRELAUNCH?`<p class="relative mt-4 text-[10px]" style="color:var(--gold)"><i class="fas fa-flask mr-1"></i>Preview version &middot; we're still testing</p>`:''}
+        <p class="relative mt-3 text-[9px] tracking-[0.22em] uppercase" style="color:rgba(250,248,246,.2)">an ORIZIS TECHNOLOGY product</p>
     </div>`;
 }
 function confirmAge() {
@@ -901,6 +906,12 @@ function renderHome() {
     if (!pool.length && activeTab === 'discover') buildPool();
     app.innerHTML = `
     <div class="min-h-screen flex flex-col bg-cream">
+        ${CONFIG.PRELAUNCH && !DB.load('prelaunchSeen', false) ? `
+        <div class="flex items-center gap-2 px-4 py-1.5 text-[11px]" style="background:var(--plum);color:var(--cream)">
+            <i class="fas fa-flask shrink-0" style="color:var(--gold)"></i>
+            <span class="flex-1 leading-tight">Preview version — we're still testing. Thanks for being early!</span>
+            <button onclick="dismissPrelaunch()" aria-label="Dismiss" class="shrink-0 px-1 opacity-60 hover:opacity-100"><i class="fas fa-xmark"></i></button>
+        </div>` : ''}
         <div id="screen" class="flex-1 flex flex-col overflow-hidden"></div>
         <nav class="border-t bg-white flex px-2" style="padding-bottom:env(safe-area-inset-bottom)">
             <button class="tab-btn ${activeTab==='discover'?'active':''}" onclick="switchTab('discover')"><i class="fas fa-fire"></i>Discover</button>
@@ -913,6 +924,7 @@ function renderHome() {
     renderTab();
 }
 function switchTab(t) { activeTab = t; activeChatId = null; renderHome(); }
+function dismissPrelaunch() { DB.save('prelaunchSeen', true); renderHome(); }
 function renderTab() {
     const s = $('screen');
     if (activeTab === 'discover') return renderDiscover(s);
