@@ -2,18 +2,18 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Chibwenzi — Meet Someone Real in Zambia 🇿🇲💘</title>
-    <meta name="description" content="Chibwenzi — Zambia's own dating app. Swipe, match and chat with real, verified people near you. Free to start. Pay with MTN MoMo, Airtel Money or Zamtel Kwacha.">
+    <meta name="description" content="Chibwenzi — Zambia's own dating app. Meet people, find shared interests and chat when you match. Free to start. Pay with MTN MoMo, Airtel Money or Zamtel Kwacha.">
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#241a20">
-    <link rel="icon" type="image/png" href="icon-192.png">
-    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <meta name="theme-color" content="#fcf8f2">
+    <link rel="icon" type="image/png" href="assets/chibwenzi-icon-192.png">
+    <link rel="apple-touch-icon" href="assets/chibwenzi-icon-192.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Chibwenzi">
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Playfair+Display:wght@600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script>
         tailwind.config = {
@@ -23,11 +23,11 @@
                         // Restrained: warm near-black + soft cream, one muted wine
                         // accent, gold only as a hairline. Deliberately quiet.
                         rose: {
-                            50: '#faf8f6', 100: '#f2ece8', 200: '#e4d4d8', 400: '#c07285',
-                            500: '#a34257', 600: '#8a3348', 700: '#6d2739', 900: '#241a20'
+                            50: '#fff9f5', 100: '#f5e4df', 200: '#e7bdc5', 400: '#cc7386',
+                            500: '#c2465e', 600: '#a82d47', 700: '#802139', 900: '#4d0e1b'
                         },
-                        plum: { DEFAULT: '#241a20', deep: '#181114', soft: '#3a2b33', mist: '#6f636a' },
-                        ember: { DEFAULT: '#a34257', soft: '#c07285', deep: '#8a3348' },
+                        plum: { DEFAULT: '#4d0e1b', deep: '#350a15', soft: '#6c2635', mist: '#80646f' },
+                        ember: { DEFAULT: '#b33149', soft: '#ff5b66', deep: '#8b253c' },
                         gold: { DEFAULT: '#c2a06a', soft: '#dcc59b', deep: '#9c7f4d' },
                         cream: { DEFAULT: '#faf8f6', warm: '#f2ece8' },
                         zam: { green: '#198a00', red: '#de2010', black: '#000000', orange: '#ef7d00' }
@@ -96,6 +96,7 @@
             *, *::before, *::after { animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important; }
         }
     </style>
+    <link rel="stylesheet" href="future-studio.css">
 </head>
 <body class="bg-cream font-sans text-slate-800 min-h-screen">
 
@@ -112,10 +113,10 @@
     </svg>
 
     <!-- App mounts here -->
-    <div id="app" class="max-w-md mx-auto min-h-screen bg-white relative shadow-xl overflow-hidden"></div>
+    <div id="app" class="cb-app"></div>
 
     <!-- ======================= TOAST ======================= -->
-    <div id="toast" class="fixed bottom-24 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-sm font-semibold px-5 py-3 rounded-full shadow-xl z-[70] hidden text-center max-w-[90%]"></div>
+    <div id="toast" role="status" aria-live="polite" class="fixed bottom-24 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-sm font-semibold px-5 py-3 rounded-full shadow-xl z-[70] hidden text-center max-w-[90%]"></div>
 
 <style>
     .swipe-card { touch-action: pan-y; will-change: transform; }
@@ -144,6 +145,7 @@
     @keyframes floatUp { from{transform:translateY(0);opacity:.9} to{transform:translateY(-120px);opacity:0} }
 </style>
 
+<script src="future-studio.js"></script>
 <script>
 /* ================================================================
    ZEDMATCH CONFIG — edit these values
@@ -350,8 +352,9 @@ async function fbSignInWithGoogle() {
         else if (me) { me.id = FB.uid; await fbSaveProfile(); }
         saveMe();
         showToast(isAdmin() ? 'Signed in as admin 🛡️' : 'Account saved — you can sign in from any phone ✓', 3400);
-        buildPool();
-        renderHome();
+        if (!me || !me.ageConfirmed) renderAgeGate();
+        else if (!me.name || !me.gender || !me.photos.length) renderOnboarding();
+        else { buildPool(); renderHome(); }
     } catch (e) {
         if (e.code === 'auth/popup-closed-by-user' || e.code === 'auth/cancelled-popup-request') return;
         console.warn('google sign-in', e);
@@ -439,7 +442,7 @@ function fbListenMatches() {
                 const info = (data.profiles && data.profiles[other]) || {};
                 matches.unshift({ id: other, _real: true, matchId: d.id, at: data.at || Date.now(), unread: true, messages: [],
                     profile: { id: other, name: info.name || 'Someone', city: me.city, verified: false,
-                               photos: [info.photo || 'https://picsum.photos/seed/' + other + '/600/800'] } });
+                               photos: [info.photo || ''] } });
                 added = true;
             });
             if (added) { saveMatches(); if (activeTab === 'matches' && !activeChatId) renderTab(); }
@@ -511,7 +514,7 @@ function confirmDeleteAccount() {
         <button onclick="doDeleteAccount(this)" class="mt-5 w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3.5 rounded-full transition">Yes, delete everything</button>
         <button onclick="this.closest('.fixed').remove()" class="mt-1 w-full text-slate-400 text-sm py-3">Cancel</button>
     </div>`;
-    document.body.appendChild(ov);
+    cbPresentDialog(ov);
 }
 
 async function doDeleteAccount(btn) {
@@ -619,44 +622,51 @@ function saveReports() { DB.save('reports', reports); }
    1) AGE GATE (18+) — legal / safety requirement
    ================================================================ */
 function renderAgeGate() {
+    app.className = 'cb-app cb-public';
     app.innerHTML = `
-    <div class="relative min-h-screen flex flex-col items-center justify-center px-7 text-center overflow-hidden"
-         style="background:var(--plum-deep); color:var(--cream)">
-
-        <div class="relative rise-in">
-            <img src="icon.svg" alt="Chibwenzi" class="w-[62px] h-[62px] mx-auto object-contain">
-            <h1 class="mt-4 wordmark text-[40px] leading-none grad-text">Chibwenzi</h1>
-            <div class="mx-auto mt-3.5 h-px w-14" style="background:linear-gradient(90deg,transparent,var(--gold),transparent)"></div>
-            <p class="mt-3.5 text-[10px] font-semibold tracking-[0.32em] uppercase" style="color:var(--ink-mute)">Find your person</p>
-        </div>
-
-        <div class="relative mt-7 w-full max-w-sm rise-in" style="animation-delay:.12s">
-            <div class="rounded-[20px] p-5 text-left border" style="background:rgba(255,255,255,.035);border-color:rgba(255,255,255,.07)">
-                <h2 class="font-bold text-[16px] leading-tight">Are you 18 or older?</h2>
-                <p class="mt-2 text-[12.5px] leading-relaxed" style="color:var(--ink-mute)">Chibwenzi is strictly for adults. You must be at least ${CONFIG.MIN_AGE} to use this app.</p>
-                <button onclick="confirmAge()" class="mt-4 w-full font-bold rounded-full py-3.5 transition"
-                        style="background:var(--cream);color:var(--plum)"
-                        onmouseover="this.style.background='#fff'" onmouseout="this.style.background='var(--cream)'">Yes, I'm 18 or older</button>
-                <button onclick="denyAge()" class="mt-1 w-full text-[13px] py-2.5 transition" style="color:var(--ink-mute)">No, I'm under 18</button>
-            </div>
-        </div>
-
-        <p class="relative mt-5 text-[10.5px] leading-relaxed max-w-[19rem] rise-in" style="animation-delay:.2s;color:rgba(250,248,246,.35)">By continuing you agree to our <b style="color:rgba(250,248,246,.6)">Terms</b> &amp; <b style="color:rgba(250,248,246,.6)">Community Rules</b>. Fake or underage profiles are removed.</p>
-        ${CONFIG.PRELAUNCH?`<p class="relative mt-4 text-[10px]" style="color:var(--gold)"><i class="fas fa-flask mr-1"></i>Preview version &middot; we're still testing</p>`:''}
-        <p class="relative mt-3 text-[9px] tracking-[0.22em] uppercase" style="color:rgba(250,248,246,.2)">an ORIZIS TECHNOLOGY product</p>
+    <div class="cb-landing">
+        <header class="cb-public-header">
+            <a href="./" class="cb-logo" aria-label="Chibwenzi home"><img src="assets/chibwenzi-mark.png" alt=""><span>Chibwenzi<small>FIND YOUR PERSON</small></span></a>
+            <nav aria-label="Main navigation"><a href="child-safety.html">Safety</a><a href="community-guidelines.html">Community Rules</a></nav>
+        </header>
+        <main>
+            <section class="cb-hero" aria-labelledby="cbHeroTitle">
+                <div class="cb-hero-copy">
+                    <h1 id="cbHeroTitle">Good things<br>start with hello.</h1>
+                    <div class="cb-hero-rule" aria-hidden="true"></div>
+                    <p class="cb-hero-lead">Meet people in Zambia. Share a little of yourself. See where a conversation takes you.</p>
+                    <div class="cb-age-panel">
+                        <h2>This is a space for adults ${CONFIG.MIN_AGE}+.</h2>
+                        <button type="button" onclick="confirmAge()" class="cb-primary">Yes, I'm 18 or older</button>
+                        <button type="button" onclick="denyAge()" class="cb-age-no">I'm under 18</button>
+                        <p class="cb-consent">By continuing, you agree to our <a href="terms.html">Terms</a> &amp; <a href="community-guidelines.html">Community Rules</a>. Read our <a href="privacy.html">Privacy Policy</a>.</p>
+                    </div>
+                    <p class="cb-brand-credit">AN ORIZIS TECHNOLOGY PRODUCT</p>
+                </div>
+                <figure class="cb-hero-photo"><img src="assets/chibwenzi-sunset.webp" alt="Two adults sharing a smile at sunset" fetchpriority="high"><figcaption>Make room for a new connection.</figcaption></figure>
+            </section>
+            <section class="cb-connection-note" aria-label="A connection at your own pace"><div class="cb-note-mark" aria-hidden="true"><img src="assets/chibwenzi-mark.png" alt=""></div><p>A little about you. A conversation with someone new. A connection that feels right.</p></section>
+            <section id="how-it-works" class="cb-how" aria-labelledby="cbHowTitle">
+                <div class="cb-section-heading"><div><p class="cb-eyebrow">AT YOUR OWN PACE</p><h2 id="cbHowTitle">Connection starts with you.</h2></div><a href="community-guidelines.html">Get to know our community <i class="fas fa-arrow-right" aria-hidden="true"></i></a></div>
+                <div class="cb-how-grid">
+                    <article><i class="fas fa-user" aria-hidden="true"></i><span>01 / BE YOURSELF</span><h3>Show a little of your world.</h3><p>Add your photos, a short bio and the interests that make you, you.</p></article>
+                    <article><i class="fas fa-heart" aria-hidden="true"></i><span>02 / FIND A CONNECTION</span><h3>See who catches your eye.</h3><p>Explore profiles and send a like. A mutual like creates a match.</p></article>
+                    <article><i class="fas fa-comment" aria-hidden="true"></i><span>03 / SAY HELLO</span><h3>Let the conversation begin.</h3><p>Chat with your matches. Safety and reporting tools stay close at hand.</p></article>
+                </div>
+            </section>
+        </main>
+        <footer class="cb-public-footer"><span>Chibwenzi · an ORIZIS TECHNOLOGY product</span><div><a href="terms.html">Terms</a><a href="privacy.html">Privacy</a><a href="child-safety.html">Safety</a><a href="accessibility.html">Accessibility</a></div>${CONFIG.PRELAUNCH?'<span class="cb-preview-label">Preview version · still testing</span>':''}</footer>
     </div>`;
 }
+
 function confirmAge() {
     if (!me) me = freshUser();
     me.ageConfirmed = true; me.agreedTerms = true; saveMe();
     renderOnboarding();
 }
 function denyAge() {
-    app.innerHTML = `<div class="min-h-screen flex flex-col items-center justify-center px-8 text-center bg-slate-900 text-white">
-        <div class="text-5xl text-rose-400"><i class="fas fa-circle-info"></i></div>
-        <h2 class="mt-4 font-bold text-xl">Sorry — you must be 18+</h2>
-        <p class="mt-2 text-slate-400 text-sm">Chibwenzi is an adults-only dating app. Please come back when you're 18.</p>
-    </div>`;
+    app.className = 'cb-app cb-public';
+    app.innerHTML = `<main class="cb-denied"><img src="assets/chibwenzi-mark.png" alt="Chibwenzi"><h1>Chibwenzi is for adults 18+.</h1><p>You must be at least 18 to use Chibwenzi. Please come back when you are 18.</p><a href="child-safety.html">Read our child safety policy</a></main>`;
 }
 
 /* ================================================================
@@ -670,39 +680,39 @@ function renderOnboarding() {
     steps[onbStep]();
 }
 function onbShell(title, sub, body, footer) {
+    app.className = 'cb-app cb-onboarding';
+    const labels = ['The basics', 'Your photos', 'About you', 'Verification'];
     app.innerHTML = `
-    <div class="min-h-screen flex flex-col bg-white">
-        <div class="px-6 pt-8 pb-4">
-            <div class="flex gap-1.5 mb-6">
-                ${[0,1,2,3].map(i => `<div class="h-1.5 flex-1 rounded-full ${i<=onbStep?'bg-rose-600':'bg-cream-warm'}"></div>`).join('')}
-            </div>
-            <h1 class="text-2xl font-display font-extrabold">${title}</h1>
-            <p class="text-slate-500 text-sm mt-1">${sub}</p>
-        </div>
-        <div class="flex-1 overflow-y-auto px-6 no-scrollbar">${body}</div>
-        <div class="p-6 border-t bg-white">${footer}</div>
+    <div class="cb-onb-layout">
+        <aside class="cb-onb-aside"><a href="./" class="cb-logo"><img src="assets/chibwenzi-mark.png" alt=""><span>Chibwenzi<small>FIND YOUR PERSON</small></span></a><div><p class="cb-eyebrow">A LITTLE MORE YOU</p><h2>Good connections<br>start with<br><em>being yourself.</em></h2><p>Your profile is a first hello. Share what feels right for you.</p></div><a href="privacy.html"><i class="fas fa-shield-halved" aria-hidden="true"></i> Your privacy matters</a></aside>
+        <main class="cb-onb-card">
+            <header><div class="cb-onb-step"><span>STEP ${onbStep + 1} OF 4</span><span>${labels[onbStep]}</span></div><div class="cb-step-track" aria-label="Step ${onbStep + 1} of 4">${[0,1,2,3].map(i => `<span class="${i<=onbStep?'complete':''}"></span>`).join('')}</div><h1>${title}</h1><p>${sub}</p></header>
+            <div class="cb-onb-fields">${body}</div>
+            <footer>${footer}${onbStep>0?'<button type="button" class="cb-text-button" onclick="onbStep--;renderOnboarding()">Back</button>':''}</footer>
+        </main>
     </div>`;
 }
+
 function onbBasics() {
     onbShell('First, the basics', 'This is how you\'ll appear on Chibwenzi.',
     `<div class="space-y-5 pb-4">
         <div>
-            <label class="text-sm font-bold text-slate-600 block mb-1.5">Your first name</label>
-            <input id="onbName" value="${me.name||''}" placeholder="e.g. Chanda" maxlength="20" class="w-full border-2 border-cream-warm focus:border-rose-500 rounded-xl px-4 py-3 outline-none">
+            <label for="onbName" class="text-sm font-bold text-slate-600 block mb-1.5">Your first name</label>
+            <input id="onbName" value="${cbEscape(me.name||'')}" placeholder="e.g. Chanda" maxlength="20" class="w-full border-2 border-cream-warm focus:border-rose-500 rounded-xl px-4 py-3 outline-none">
         </div>
         <div>
-            <label class="text-sm font-bold text-slate-600 block mb-1.5">Your age</label>
+            <label for="onbAge" class="text-sm font-bold text-slate-600 block mb-1.5">Your age</label>
             <input id="onbAge" value="${me.age||''}" type="number" min="18" max="99" placeholder="18+" class="w-full border-2 border-cream-warm focus:border-rose-500 rounded-xl px-4 py-3 outline-none" oninput="this.value=this.value.slice(0,2)">
         </div>
         <div>
             <label class="text-sm font-bold text-slate-600 block mb-2">I am a</label>
             <div class="flex gap-2">
-                <div class="pref-chip flex-1 text-center ${me.gender==='m'?'on':''}" onclick="setGender('m')"><i class="fas fa-mars mr-1"></i>Man</div>
-                <div class="pref-chip flex-1 text-center ${me.gender==='f'?'on':''}" onclick="setGender('f')"><i class="fas fa-venus mr-1"></i>Woman</div>
+                <button type="button" aria-pressed="${me.gender==='m'}" class="pref-chip flex-1 text-center ${me.gender==='m'?'on':''}" onclick="setGender('m')"><i class="fas fa-mars mr-1" aria-hidden="true"></i>Man</button>
+                <button type="button" aria-pressed="${me.gender==='f'}" class="pref-chip flex-1 text-center ${me.gender==='f'?'on':''}" onclick="setGender('f')"><i class="fas fa-venus mr-1" aria-hidden="true"></i>Woman</button>
             </div>
         </div>
         <div>
-            <label class="text-sm font-bold text-slate-600 block mb-2">Your city</label>
+            <label for="onbCity" class="text-sm font-bold text-slate-600 block mb-2">Your city</label>
             <select id="onbCity" class="w-full border-2 border-cream-warm focus:border-rose-500 rounded-xl px-4 py-3 outline-none bg-white">
                 ${CONFIG.CITIES.map(c => `<option ${me.city===c?'selected':''}>${c}</option>`).join('')}
             </select>
@@ -711,7 +721,7 @@ function onbBasics() {
     </div>`,
     `<button onclick="saveBasics()" class="btn-primary w-full">Continue</button>`);
 }
-function setGender(g) { me.gender = g; me.seeking = g === 'm' ? 'f' : 'm'; onbBasics(); }
+function setGender(g) { me.name = $('onbName').value; me.age = $('onbAge').value; me.city = $('onbCity').value; me.gender = g; me.seeking = g === 'm' ? 'f' : 'm'; onbBasics(); }
 function saveBasics() {
     const name = $('onbName').value.trim();
     const age = parseInt($('onbAge').value);
@@ -724,19 +734,19 @@ function saveBasics() {
     saveMe(); onbStep = 1; renderOnboarding();
 }
 function onbPhotos() {
-    onbShell('Add your photos', 'Real, clear photos get 3× more matches. Add at least one.',
+    onbShell('Add your photos', 'Share a clear photo that feels like you. Add at least one.',
     `<div class="grid grid-cols-3 gap-3 pb-4">
         ${[0,1,2,3,4,5].map(i => {
             const p = me.photos[i];
             return p
               ? `<div class="relative aspect-[3/4] rounded-xl overflow-hidden bg-cream">
-                   <img src="${p}" class="w-full h-full object-cover">
-                   <button onclick="removePhoto(${i})" class="absolute top-1 right-1 bg-black/60 text-white w-6 h-6 rounded-full text-xs"><i class="fas fa-xmark"></i></button>
+                   <img src="${p}" alt="Your profile photo ${i+1}" class="w-full h-full object-cover">
+                   <button type="button" aria-label="Remove photo ${i+1}" onclick="removePhoto(${i})" class="absolute top-1 right-1 bg-black/60 text-white w-6 h-6 rounded-full text-xs"><i class="fas fa-xmark"></i></button>
                  </div>`
-              : `<button onclick="addPhoto()" class="aspect-[3/4] rounded-xl border-2 border-dashed border-rose-200/70 text-rose-400/60 flex items-center justify-center hover:border-rose-400 hover:text-rose-400"><i class="fas fa-plus text-xl"></i></button>`;
+              : `<button type="button" aria-label="Add profile photo" onclick="addPhoto()" class="aspect-[3/4] rounded-xl border-2 border-dashed border-rose-200/70 text-rose-400/60 flex items-center justify-center hover:border-rose-400 hover:text-rose-400"><i class="fas fa-plus text-xl"></i></button>`;
         }).join('')}
     </div>
-    <p class="text-[11px] text-slate-400"><i class="fas fa-circle-info mr-1"></i>Photos are uploaded from your phone. Clear face photos get the most matches — no nudity, no group shots.</p>`,
+    <p class="text-[11px] text-slate-400"><i class="fas fa-circle-info mr-1"></i>Photos are uploaded from your phone. Choose clear photos of yourself — no nudity or group shots.</p>`,
     `<button onclick="savePhotos()" class="btn-primary w-full">Continue</button>`);
 }
 /* ---- REAL PHOTO UPLOAD ---------------------------------------------------
@@ -810,13 +820,13 @@ function onbAbout() {
     onbShell('Tell us about you', 'A short bio and your interests help you match with the right people.',
     `<div class="space-y-5 pb-4">
         <div>
-            <label class="text-sm font-bold text-slate-600 block mb-1.5">Your bio</label>
-            <textarea id="onbBio" rows="3" maxlength="200" placeholder="Say something real about yourself..." class="w-full border-2 border-cream-warm focus:border-rose-500 rounded-xl px-4 py-3 outline-none resize-none">${me.bio||''}</textarea>
+            <label for="onbBio" class="text-sm font-bold text-slate-600 block mb-1.5">Your bio</label>
+            <textarea id="onbBio" rows="3" maxlength="200" placeholder="Say something real about yourself..." class="w-full border-2 border-cream-warm focus:border-rose-500 rounded-xl px-4 py-3 outline-none resize-none">${cbEscape(me.bio||'')}</textarea>
         </div>
         <div>
             <label class="text-sm font-bold text-slate-600 block mb-2">Your interests <span class="text-slate-400 font-normal">(pick a few)</span></label>
             <div id="onbInterests" class="flex flex-wrap gap-2">
-                ${INTEREST_OPTIONS.map(x => `<span class="pref-chip ${me.interests.includes(x)?'on':''}" onclick="toggleInterest('${x}')">${x}</span>`).join('')}
+                ${INTEREST_OPTIONS.map(x => `<button type="button" aria-pressed="${me.interests.includes(x)}" class="pref-chip ${me.interests.includes(x)?'on':''}" onclick="toggleInterest('${x}')">${x}</button>`).join('')}
             </div>
         </div>
     </div>`,
@@ -836,7 +846,7 @@ function saveAbout() {
 }
 function onbVerify() {
     const st = me.verifyStatus;
-    onbShell('Get verified ✓', 'Verification keeps Chibwenzi safe and cuts fake profiles. Take a quick selfie.',
+    onbShell('Get verified ✓', 'Submit a selfie for review. Your verification status will appear on your profile.',
     `<div class="pb-4 text-center">
         <div class="mx-auto w-40 h-40 rounded-full border-4 ${st==='pending'||st==='approved'?'border-green-400':'border-rose-200/70 border-dashed'} flex items-center justify-center bg-cream overflow-hidden">
             ${me.selfie ? `<img src="${me.selfie}" class="w-full h-full object-cover">` : `<i class="fas fa-camera text-4xl text-rose-400/60"></i>`}
@@ -849,7 +859,7 @@ function onbVerify() {
             <p><i class="fas fa-user-lock text-ember mr-1.5"></i>We never share your phone number with other users.</p>
         </div>
     </div>`,
-    `<button onclick="finishOnboarding()" class="w-full ${me.selfie?'bg-ember-deep hover:bg-plum-soft':'bg-slate-200 text-slate-400'} text-white font-extrabold py-3.5 rounded-full transition">${me.selfie?'Start matching':'Skip for now'}</button>`);
+    `<button onclick="finishOnboarding()" class="btn-primary w-full">${me.selfie?'Start matching':'Skip for now'}</button>`);
 }
 function takeSelfie() {
     const input = document.createElement('input');
@@ -902,27 +912,28 @@ function buildPool() {
 /* ================================================================
    HOME SHELL + TABS
    ================================================================ */
+function cbNavItems() {
+    return [
+        ['discover','compass','Discover'],['likes','heart','Likes you'],['matches','comment','Conversations'],['profile','user','My profile'],
+        ...(isAdmin() ? [['admin','shield-halved','Moderation']] : [])
+    ].map(([id,icon,label]) => `<button type="button" class="cb-nav-item ${activeTab===id?'active':''}" ${activeTab===id?'aria-current="page"':''} onclick="switchTab('${id}')"><i class="fas fa-${icon}" aria-hidden="true"></i><span>${label}</span>${id==='matches'&&matches.length?`<b>${matches.length}</b>`:''}</button>`).join('');
+}
 function renderHome() {
     if (!pool.length && activeTab === 'discover') buildPool();
+    app.className = 'cb-app cb-authenticated';
     app.innerHTML = `
-    <div class="min-h-screen flex flex-col bg-cream">
-        ${CONFIG.PRELAUNCH && !DB.load('prelaunchSeen', false) ? `
-        <div class="flex items-center gap-2 px-4 py-1.5 text-[11px]" style="background:var(--plum);color:var(--cream)">
-            <i class="fas fa-flask shrink-0" style="color:var(--gold)"></i>
-            <span class="flex-1 leading-tight">Preview version — we're still testing. Thanks for being early!</span>
-            <button onclick="dismissPrelaunch()" aria-label="Dismiss" class="shrink-0 px-1 opacity-60 hover:opacity-100"><i class="fas fa-xmark"></i></button>
-        </div>` : ''}
-        <div id="screen" class="flex-1 flex flex-col overflow-hidden"></div>
-        <nav class="border-t bg-white flex px-2" style="padding-bottom:env(safe-area-inset-bottom)">
-            <button class="tab-btn ${activeTab==='discover'?'active':''}" onclick="switchTab('discover')"><i class="fas fa-fire"></i>Discover</button>
-            <button class="tab-btn ${activeTab==='likes'?'active':''}" onclick="switchTab('likes')"><i class="fas fa-star"></i>Likes</button>
-            <button class="tab-btn relative ${activeTab==='matches'?'active':''}" onclick="switchTab('matches')"><i class="fas fa-heart"></i>Matches${matches.length?`<span class="absolute top-1 right-1/4 bg-rose-600 text-white text-[9px] rounded-full w-4 h-4 flex items-center justify-center">${matches.length}</span>`:''}</button>
-            <button class="tab-btn ${activeTab==='profile'?'active':''}" onclick="switchTab('profile')"><i class="fas fa-user"></i>Profile</button>
-            ${isAdmin() ? `<button class="tab-btn ${activeTab==='admin'?'active':''}" onclick="switchTab('admin')"><i class="fas fa-shield-halved"></i>Admin</button>`:''}
-        </nav>
+    <div class="cb-shell">
+        <aside class="cb-rail"><a class="cb-logo" href="./"><img src="assets/chibwenzi-mark.png" alt=""><span>Chibwenzi<small>FIND YOUR PERSON</small></span></a><nav aria-label="Main navigation">${cbNavItems()}</nav><div class="cb-rail-bottom"><p>A good connection.<br>On your terms.</p><button type="button" onclick="openSafety()"><i class="fas fa-shield-halved" aria-hidden="true"></i> Safety center</button><a href="privacy.html">Privacy &amp; your data</a></div></aside>
+        <div class="cb-workspace">
+            <header class="cb-app-top"><a href="./" class="cb-logo cb-mobile-logo"><img src="assets/chibwenzi-mark.png" alt=""><span>Chibwenzi</span></a><span class="cb-desktop-greeting">Your next chapter starts with a hello.</span><div><span class="cb-location"><i class="fas fa-location-dot" aria-hidden="true"></i> ${cbEscape(me.city)}</span><button type="button" class="cb-icon-button" onclick="openSafety()" aria-label="Open safety center"><i class="fas fa-shield-halved" aria-hidden="true"></i></button></div></header>
+            ${CONFIG.PRELAUNCH && !DB.load('prelaunchSeen', false) ? `<div class="cb-prelaunch"><i class="fas fa-flask" aria-hidden="true"></i><span>Preview version — we're still testing. Thanks for being early.</span><button type="button" onclick="dismissPrelaunch()" aria-label="Dismiss preview notice"><i class="fas fa-xmark" aria-hidden="true"></i></button></div>` : ''}
+            <main id="screen" class="flex-1 flex flex-col overflow-hidden"></main>
+            <nav class="cb-mobile-nav" aria-label="Main navigation">${cbNavItems()}</nav>
+        </div>
     </div>`;
     renderTab();
 }
+
 function switchTab(t) { activeTab = t; activeChatId = null; renderHome(); }
 function dismissPrelaunch() { DB.save('prelaunchSeen', true); renderHome(); }
 function renderTab() {
@@ -940,32 +951,14 @@ function renderTab() {
 function renderDiscover(s) {
     const boosted = me.boostUntil > Date.now();
     s.innerHTML = `
-    <header class="px-4 pt-4 pb-2 flex items-center justify-between">
-        <div class="flex items-center gap-2.5">
-            <img src="icon.svg" alt="Chibwenzi" class="w-9 h-9 object-contain">
-            <h1 class="wordmark text-[22px] text-plum">Chibwenzi</h1>
-        </div>
-        <div class="flex items-center gap-2">
-            ${boosted?`<span class="text-[10px] font-bold text-white bg-gradient-to-r from-purple-500 to-rose-500 px-2 py-1 rounded-full"><i class="fas fa-bolt"></i> Boosted</span>`:''}
-            <button onclick="openBoost()" class="text-purple-500 text-lg w-9 h-9"><i class="fas fa-bolt"></i></button>
-            <button onclick="openSafety()" class="text-slate-400 text-lg w-9 h-9"><i class="fas fa-shield-halved"></i></button>
-        </div>
-    </header>
-    <div class="px-4 text-[11px] text-slate-400 flex items-center justify-between -mt-1 mb-1">
-        <span><i class="fas fa-location-dot mr-1 text-rose-400"></i>${me.city} · people near you</span>
-        <span>${isAdmin() ? '<b class="text-gold-deep"><i class="fas fa-shield-halved"></i> Admin</b>'
-            : isLaunchFree() ? '<b class="text-ember-deep"><i class="fas fa-gift"></i> Free until ' + launchFreeEndsText() + '</b>'
-            : me.premium ? '<b class="text-ember-deep">Premium</b>'
-            : (CONFIG.FREE_SWIPES_PER_DAY - me.swipesToday) + ' free likes left'}</span>
-    </div>
-    <div id="deck" class="relative flex-1 mx-4 mb-3"></div>
-    <div class="flex items-center justify-center gap-5 pb-4">
-        <button onclick="swipeBtn('nope')" aria-label="Pass" class="deck-btn w-[58px] h-[58px] text-[22px]" style="color:#d13a56"><i class="fas fa-xmark"></i></button>
-        <button onclick="swipeBtn('super')" aria-label="Super Like" class="deck-btn w-[50px] h-[50px] text-[19px]" style="color:#e3ae4e"><i class="fas fa-star"></i></button>
-        <button onclick="swipeBtn('like')" aria-label="Like" class="deck-btn deck-btn-primary w-[68px] h-[68px] text-[26px]"><i class="fas fa-heart"></i></button>
+    <header class="cb-screen-heading"><div><p class="cb-eyebrow">MAKE A LITTLE ROOM FOR POSSIBILITY</p><h1>Discover.</h1></div><button type="button" class="cb-outline-button" onclick="openBoost()"><i class="fas fa-bolt" aria-hidden="true"></i> ${boosted?'Boost active':'Explore Premium'}</button></header>
+    <div class="cb-discover-layout">
+        <div class="cb-discover-copy"><h2>Someone worth<br><em>getting to know.</em></h2><p>Explore people across Zambia. A shared interest could be the start of a good conversation.</p><div class="cb-member-status">${isAdmin() ? '<i class="fas fa-shield-halved" aria-hidden="true"></i> Admin access' : isLaunchFree() ? '<i class="fas fa-gift" aria-hidden="true"></i> Free until ' + launchFreeEndsText() : me.premium ? '<i class="fas fa-crown" aria-hidden="true"></i> Premium member' : Math.max(0,CONFIG.FREE_SWIPES_PER_DAY-me.swipesToday)+' free likes left today'}</div><div class="cb-discovery-tip"><i class="fas fa-comment" aria-hidden="true"></i><h3>A thoughtful hello goes a long way.</h3><p>When you match, ask about something on their profile. Keep it kind and keep it you.</p></div><button type="button" class="cb-text-button" onclick="openSafety()">A few tips for staying safe <i class="fas fa-arrow-right" aria-hidden="true"></i></button></div>
+        <div class="cb-deck-area"><div id="deck" class="relative flex-1"></div><div class="cb-deck-actions"><button type="button" onclick="swipeBtn('nope')" aria-label="Pass" class="deck-btn cb-pass"><i class="fas fa-xmark" aria-hidden="true"></i><span>Pass</span></button><button type="button" onclick="swipeBtn('super')" aria-label="Super Like" class="deck-btn cb-super"><i class="fas fa-star" aria-hidden="true"></i><span>Super Like</span></button><button type="button" onclick="swipeBtn('like')" aria-label="Like" class="deck-btn deck-btn-primary cb-like"><i class="fas fa-heart" aria-hidden="true"></i><span>Like</span></button></div></div>
     </div>`;
     renderDeck();
 }
+
 function renderDeck() {
     const deck = $('deck');
     if (!deck) return;
@@ -978,12 +971,12 @@ function renderDeck() {
         // Genuinely nobody left. Chibwenzi is new, so say so plainly and turn
         // the moment into an invite rather than pretending there are profiles.
         const share = 'Join me on Chibwenzi — Zambia\'s own dating app 💚 https://chibwenzi.com';
-        deck.innerHTML = `<div class="absolute inset-0 flex flex-col items-center justify-center text-center px-7">
-            <img src="icon.svg" alt="Chibwenzi" class="w-16 h-16 object-contain">
+        deck.innerHTML = `<div class="cb-empty">
+            <img src="assets/chibwenzi-mark.png" alt="Chibwenzi" class="w-16 h-16 object-contain">
             <h3 class="mt-4 font-bold text-lg">No one new right now</h3>
             <p class="text-slate-500 text-sm mt-1.5 leading-relaxed">Chibwenzi is just getting started in ${me.city}. Invite your friends — the more people here, the better your matches.</p>
             <button onclick="shareInvite()" class="btn-primary mt-5 !py-3 !px-7"><i class="fas fa-user-plus mr-1.5"></i>Invite friends</button>
-            <button onclick="buildPool();renderDeck()" class="mt-2.5 text-xs text-slate-400 underline">Refresh</button>
+            <button type="button" onclick="buildPool();renderDeck()" class="cb-text-button">Refresh profiles</button>
             <textarea id="shareText" class="sr-only" aria-hidden="true">${share}</textarea>
         </div>`;
         return;
@@ -999,18 +992,18 @@ function cardHtml(p, behind) {
     return `
     <div class="swipe-card absolute inset-0 overflow-hidden bg-plum ${behind?'scale-[.955] translate-y-2.5':''}" data-id="${p.id}"
          style="border-radius:var(--r-xl); box-shadow:${behind?'var(--sh-md)':'0 26px 60px -18px rgba(43,10,30,.55)'}">
-        <img src="${p.photos[0]}" alt="" class="absolute inset-0 w-full h-full object-cover" onerror="this.src='https://picsum.photos/seed/fb${p.id}/600/800'">
+        <img src="${p.photos[0]}" alt="" class="absolute inset-0 w-full h-full object-cover" onerror="this.hidden=true">
         <div class="absolute inset-0" style="background:linear-gradient(to top, rgba(26,5,18,.93) 0%, rgba(26,5,18,.55) 26%, rgba(26,5,18,.05) 52%, rgba(43,10,30,.28) 100%)"></div>
         <div class="stamp stamp-like">LIKE</div>
         <div class="stamp stamp-nope">NOPE</div>
         <div class="stamp stamp-super">SUPER</div>
-        <button onclick="openProfileCard('${p.id}')" aria-label="More about ${p.name}"
+        <button onclick="openProfileCard(${cbArg(p.id)})" aria-label="More about ${cbEscape(p.name)}"
                 class="absolute top-3.5 right-3.5 bg-black/35 backdrop-blur-md border border-white/15 text-white w-10 h-10 rounded-full text-sm z-10 hover:bg-black/55 transition"><i class="fas fa-circle-info"></i></button>
         ${p.verified?`<span class="absolute top-3.5 left-3.5 z-10 inline-flex items-center gap-1.5 bg-black/35 backdrop-blur-md border border-white/15 text-white text-[11px] font-bold pl-2 pr-2.5 py-1.5 rounded-full"><i class="fas fa-circle-check text-gold-soft"></i>Verified</span>`:''}
         <div class="absolute bottom-0 left-0 right-0 p-6 text-white">
-            <h2 class="text-[30px] font-extrabold leading-none tracking-tight">${p.name}<span class="font-light text-white/75">, ${p.age}</span></h2>
-            <p class="text-white/65 text-[13px] font-medium mt-2"><i class="fas fa-location-dot mr-1.5 text-ember-soft"></i>${p.city}</p>
-            <p class="text-white/90 text-sm mt-3 leading-relaxed line-clamp-2">${p.bio}</p>
+            <h2 class="text-[30px] font-extrabold leading-none tracking-tight">${cbEscape(p.name)}<span class="font-light text-white/75">, ${p.age}</span></h2>
+            <p class="text-white/65 text-[13px] font-medium mt-2"><i class="fas fa-location-dot mr-1.5 text-ember-soft"></i>${cbEscape(p.city)}</p>
+            <p class="text-white/90 text-sm mt-3 leading-relaxed line-clamp-2">${cbEscape(p.bio)}</p>
             <div class="flex flex-wrap gap-1.5 mt-4">${(p.interests||[]).slice(0,4).map(x=>`<span class="interest-chip">${x}</span>`).join('')}</div>
         </div>
     </div>`;
@@ -1117,21 +1110,21 @@ function showMatch(card) {
     ov.className = 'fixed inset-0 z-[80] flex flex-col items-center justify-center px-8 text-center text-white fade-in';
     ov.style.background = 'var(--plum-deep)';
     ov.innerHTML = `
-        <div class="relative">
+        <div class="relative cb-match-panel">
             <p class="text-[10px] font-semibold tracking-[0.34em] uppercase rise-in" style="color:var(--gold)">Chibwenzi</p>
             <p class="wordmark text-[44px] mt-2.5 leading-none heart-pop" style="color:var(--cream)">It's a match</p>
-            <p class="mt-3 text-[14px] rise-in" style="animation-delay:.1s;color:var(--ink-mute)">You and <b style="color:var(--cream)">${card.name}</b> liked each other.</p>
+            <p class="mt-3 text-[14px] rise-in" style="animation-delay:.1s;color:#e7cbd2">You and <b style="color:var(--cream)">${cbEscape(card.name)}</b> liked each other.</p>
             <div class="flex items-center justify-center gap-4 mt-11 rise-in" style="animation-delay:.18s">
                 <img src="${me.photos[0]}" alt="" class="w-24 h-24 rounded-full object-cover" style="border:2px solid rgba(250,248,246,.25)">
                 <div class="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style="background:var(--ember);color:#fff"><i class="fas fa-heart text-sm"></i></div>
                 <img src="${card.photos[0]}" alt="" class="w-24 h-24 rounded-full object-cover" style="border:2px solid rgba(250,248,246,.25)">
             </div>
             <div class="mt-12 w-full max-w-xs mx-auto rise-in" style="animation-delay:.26s">
-                <button onclick="this.closest('.fixed').remove(); openChatWith('${card.id}')" class="w-full font-bold rounded-full py-3.5 transition" style="background:var(--cream);color:var(--plum)">Send a message</button>
-                <button onclick="this.closest('.fixed').remove()" class="mt-1 w-full text-sm py-3 transition" style="color:var(--ink-mute)">Keep swiping</button>
+                <button onclick="this.closest('.fixed').remove(); openChatWith(${cbArg(card.id)})" class="w-full font-bold rounded-full py-3.5 transition" style="background:var(--cream);color:var(--plum)">Send a message</button>
+                <button onclick="this.closest('.fixed').remove()" class="mt-1 w-full text-sm py-3 transition" style="color:#e7cbd2">Keep swiping</button>
             </div>
         </div>`;
-    document.body.appendChild(ov);
+    cbPresentDialog(ov);
 }
 
 /* ================================================================
@@ -1152,13 +1145,13 @@ function renderLikes(s) {
         likers.length===0 ? `<div class="text-center py-16 text-slate-400"><i class="fas fa-star text-4xl text-rose-200"></i><p class="mt-3 text-sm">No likes yet — keep swiping and check back soon!</p></div>` :
         `<div class="grid grid-cols-2 gap-3">
             ${likers.map(p => `
-            <div class="relative aspect-[3/4] rounded-2xl overflow-hidden shadow ${unlocked?'':'cursor-pointer'}" ${unlocked?`onclick="openProfileCard('${p.id}')"`:`onclick="openPaywall('wholiked')"`}>
+            <button type="button" aria-label="${unlocked?'More about '+cbEscape(p.name):'Unlock this profile'}" class="relative aspect-[3/4] rounded-2xl overflow-hidden shadow text-left ${unlocked?'':'cursor-pointer'}" ${unlocked?`onclick="openProfileCard(${cbArg(p.id)})"`:`onclick="openPaywall('wholiked')"`}>
                 <img src="${p.photos[0]}" class="w-full h-full object-cover ${unlocked?'':'blur-xl scale-110'}">
                 <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
                 <div class="absolute bottom-2 left-3 right-3 text-white">
-                    ${unlocked?`<p class="font-bold">${p.name}, ${p.age} ${p.verified?'<i class=\'fas fa-circle-check text-blue-400 text-xs\'></i>':''}</p><p class="text-[11px] text-white/70">${p.city}</p>`:`<p class="font-bold text-sm"><i class="fas fa-lock mr-1"></i>Liked you</p>`}
+                    ${unlocked?`<p class="font-bold">${cbEscape(p.name)}, ${p.age} ${p.verified?'<i class=\'fas fa-circle-check text-blue-400 text-xs\'></i>':''}</p><p class="text-[11px] text-white/70">${cbEscape(p.city)}</p>`:`<p class="font-bold text-sm"><i class="fas fa-lock mr-1"></i>Liked you</p>`}
                 </div>
-            </div>`).join('')}
+            </button>`).join('')}
         </div>
         ${!unlocked?`<button onclick="openPaywall('wholiked')" class="btn-primary mt-5 w-full"><i class="fas fa-eye mr-1"></i>See who likes you</button>`:''}`}
     </div>`;
@@ -1170,65 +1163,64 @@ function renderLikes(s) {
    ================================================================ */
 function renderMatches(s) {
     s.innerHTML = `
-    <header class="px-5 pt-5 pb-3"><h1 class="text-2xl font-display font-extrabold"><i class="fas fa-heart text-ember-deep mr-1"></i>Matches</h1></header>
-    <div class="flex-1 overflow-y-auto no-scrollbar">
-        ${matches.length===0 ? `<div class="text-center py-16 text-slate-400 px-8"><i class="fas fa-heart-crack text-4xl text-rose-100"></i><p class="mt-3 text-sm">No matches yet. Head to Discover and start swiping!</p></div>` :
+    <header class="cb-screen-heading"><div><p class="cb-eyebrow">A LITTLE HELLO GOES A LONG WAY</p><h1>Conversations.</h1></div></header>
+    <div class="flex-1 overflow-y-auto no-scrollbar"><div class="cb-conversation-list">
+        ${matches.length===0 ? `<div class="cb-conversation-empty"><i class="far fa-comments" aria-hidden="true"></i><h2>A good conversation starts here.</h2><p>When you both like each other, your match will appear here. Take your time and make a connection.</p><button type="button" class="btn-primary mt-6" onclick="switchTab('discover')">Explore profiles</button></div>` :
         matches.map(m => {
             const last = m.messages[m.messages.length-1];
-            return `<button onclick="openChatWith('${m.id}')" class="w-full flex items-center gap-3 px-5 py-3 hover:bg-cream text-left border-b border-rose-50">
+            return `<button onclick="openChatWith(${cbArg(m.id)})" class="w-full flex items-center gap-3 px-5 py-3 hover:bg-cream text-left border-b border-rose-50">
                 <img src="${m.profile.photos[0]}" class="w-14 h-14 rounded-full object-cover">
                 <div class="flex-1 min-w-0">
-                    <div class="flex items-center gap-1.5"><span class="font-bold">${m.profile.name}</span>${m.profile.verified?'<i class="fas fa-circle-check text-blue-400 text-xs"></i>':''}</div>
-                    <p class="text-sm text-slate-500 truncate">${last ? (last.from==='me'?'You: ':'')+last.text : 'You matched — say hi! 👋'}</p>
+                    <div class="flex items-center gap-1.5"><span class="font-bold">${cbEscape(m.profile.name)}</span>${m.profile.verified?'<i class="fas fa-circle-check text-blue-400 text-xs"></i>':''}</div>
+                    <p class="text-sm text-slate-500 truncate">${last ? cbEscape((last.from==='me'?'You: ':'')+last.text) : 'You matched — say hello.'}</p>
                 </div>
                 ${m.unread?'<span class="w-2.5 h-2.5 bg-rose-600 rounded-full"></span>':''}
             </button>`;
         }).join('')}
-    </div>`;
+    </div></div>`;
 }
 function openChatWith(id) { activeTab='matches'; activeChatId=id; const m=matches.find(x=>x.id===id); if(m){m.unread=false;saveMatches(); if(m._real) fbListenMessages(m);} renderHome(); }
 function renderChat(s) {
     const m = matches.find(x=>x.id===activeChatId);
     if (!m) { activeChatId=null; return renderMatches(s); }
+    const previousInput = $('chatInput');
+    const draft = previousInput ? previousInput.value : '';
+    const restoreInputFocus = previousInput && document.activeElement === previousInput;
     s.innerHTML = `
     <header class="px-3 pt-4 pb-3 flex items-center gap-2 border-b bg-white">
-        <button onclick="activeChatId=null;renderHome()" class="text-slate-500 w-9 h-9 text-lg"><i class="fas fa-chevron-left"></i></button>
+        <button type="button" onclick="activeChatId=null;renderHome()" aria-label="Back to conversations" class="text-slate-500 w-9 h-9 text-lg"><i class="fas fa-chevron-left"></i></button>
         <img src="${m.profile.photos[0]}" class="w-10 h-10 rounded-full object-cover">
-        <div class="flex-1"><div class="flex items-center gap-1.5 font-bold">${m.profile.name}${m.profile.verified?'<i class="fas fa-circle-check text-blue-400 text-xs"></i>':''}</div><p class="text-[11px] text-slate-400">${m.profile.city}</p></div>
-        <button onclick="reportUser('${m.id}')" class="text-slate-400 w-9 h-9 text-lg" title="Safety"><i class="fas fa-shield-halved"></i></button>
+        <div class="flex-1"><div class="flex items-center gap-1.5 font-bold">${cbEscape(m.profile.name)}${m.profile.verified?'<i class="fas fa-circle-check text-blue-400 text-xs"></i>':''}</div><p class="text-[11px] text-slate-400">${cbEscape(m.profile.city)}</p></div>
+        <button onclick="reportUser(${cbArg(m.id)})" class="text-slate-400 w-9 h-9 text-lg" title="Safety" aria-label="Report or block this person"><i class="fas fa-shield-halved"></i></button>
     </header>
     <div id="chatBody" class="flex-1 overflow-y-auto no-scrollbar p-4 space-y-2 bg-cream">
         <div class="text-center text-[11px] text-slate-400 mb-2">
             <img src="${m.profile.photos[0]}" class="w-16 h-16 rounded-full object-cover mx-auto mb-2">
-            You matched with ${m.profile.name}. Be kind and stay safe — never share money or personal details.
+            You matched with ${cbEscape(m.profile.name)}. Be kind and stay safe — never share money or personal details.
         </div>
         ${m.messages.map(msg => `
             <div class="flex ${msg.from==='me'?'justify-end':'justify-start'}">
-                <div class="${msg.from==='me'?'msg-out':'msg-in'} px-4 py-2 max-w-[75%] text-sm">${msg.text}</div>
+                <div class="${msg.from==='me'?'msg-out':'msg-in'} px-4 py-2 max-w-[75%] text-sm">${cbEscape(msg.text)}</div>
             </div>`).join('')}
     </div>
     <div class="p-3 border-t bg-white flex items-center gap-2" style="padding-bottom:calc(env(safe-area-inset-bottom) + 12px)">
-        <input id="chatInput" placeholder="Type a message..." class="flex-1 bg-cream rounded-full px-4 py-3 text-sm outline-none" onkeydown="if(event.key==='Enter')sendMsg()">
-        <button onclick="sendMsg()" class="w-11 h-11 rounded-full bg-rose-600 text-white shrink-0"><i class="fas fa-paper-plane"></i></button>
+        <input id="chatInput" aria-label="Message" placeholder="Type a message..." class="flex-1 bg-cream rounded-full px-4 py-3 text-sm outline-none" onkeydown="if(event.key==='Enter')sendMsg()">
+        <button type="button" onclick="sendMsg()" aria-label="Send message" class="w-11 h-11 rounded-full bg-rose-600 text-white shrink-0"><i class="fas fa-paper-plane"></i></button>
     </div>`;
     const body = $('chatBody'); body.scrollTop = body.scrollHeight;
+    $('chatInput').value = draft;
+    if (restoreInputFocus) $('chatInput').focus({ preventScroll: true });
 }
 function sendMsg() {
     const inp = $('chatInput'); const text = inp.value.trim(); if (!text) return;
     const m = matches.find(x=>x.id===activeChatId);
+    if (m._real && !FB.on) return showToast('You are offline. Reconnect before sending a message.');
     inp.value='';
     if (m._real && FB.on) { fbSendMessage(m, text); return; } // real: listener re-renders
     m.messages.push({ from:'me', text, at:Date.now() });
     saveMatches();
     renderChat($('screen'));
-    // DEMO: a light simulated reply so chat feels alive.
-    setTimeout(() => {
-        const replies = ['Hi! 😊 How are you?','That\'s nice to hear!','Haha you seem fun 😄','What do you like to do on weekends?','Where in '+me.city+' are you based?'];
-        m.messages.push({ from:'them', text: replies[Math.floor(Math.random()*replies.length)], at:Date.now() });
-        if (activeChatId!==m.id) m.unread = true;
-        saveMatches();
-        if (activeChatId===m.id && activeTab==='matches') renderChat($('screen'));
-    }, 1200 + Math.random()*1200);
+
 }
 
 /* ================================================================
@@ -1239,18 +1231,19 @@ function renderProfile(s) {
         : me.verifyStatus==='pending' ? '<span class="text-amber-500"><i class="fas fa-clock"></i> Verification pending</span>'
         : '<button onclick="onbStep=3;renderOnboarding()" class="text-ember-deep underline">Get verified</button>';
     s.innerHTML = `
-    <div class="flex-1 overflow-y-auto no-scrollbar pb-6">
-        <div class="relative h-56 bg-slate-900">
-            <img src="${me.photos[0]}" class="w-full h-full object-cover opacity-90">
+    <header class="cb-screen-heading"><div><p class="cb-eyebrow">YOUR PROFILE. YOUR PACE.</p><h1>My profile.</h1></div><button type="button" class="cb-outline-button" onclick="onbStep=0;renderOnboarding()"><i class="fas fa-pen" aria-hidden="true"></i>Edit profile</button></header>
+    <div class="flex-1 overflow-y-auto no-scrollbar pb-6"><div class="cb-settings-wrap"><section class="cb-settings-profile" aria-label="Your profile">
+        <div class="relative cb-profile-photo bg-slate-900">
+            <img src="${me.photos[0]}" alt="Your profile photo" class="w-full h-full object-cover opacity-90">
             <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
             <div class="absolute bottom-4 left-5 text-white">
-                <h1 class="text-2xl font-extrabold">${me.name}, ${me.age}</h1>
+                <h2 class="text-2xl font-extrabold">${cbEscape(me.name)}, ${me.age}</h2>
                 <p class="text-white/80 text-sm"><i class="fas fa-location-dot mr-1"></i>${me.city}</p>
             </div>
             ${hasPremium()?'<span class="absolute top-4 right-4 bg-gold text-black text-[11px] font-extrabold px-3 py-1 rounded-full"><i class="fas fa-crown"></i> PREMIUM</span>':''}
         </div>
         <div class="px-5 -mt-4 relative">
-            <div class="bg-white rounded-2xl shadow-sm p-4 text-sm text-slate-600">${me.bio || 'No bio yet.'}
+            <div class="bg-white rounded-2xl shadow-sm p-4 text-sm text-slate-600">${cbEscape(me.bio || 'No bio yet.')}
                 <div class="flex flex-wrap gap-1.5 mt-3">${me.interests.map(x=>`<span class="pref-chip on !text-xs !py-1">${x}</span>`).join('')}</div>
                 <p class="mt-3 text-xs">${vBadge}</p>
             </div>
@@ -1271,7 +1264,7 @@ function renderProfile(s) {
             <div class="bg-white rounded-xl py-3 shadow-sm"><p class="text-lg font-extrabold text-ember-deep">${matches.length}</p><p class="text-[10px] text-slate-400 font-bold">MATCHES</p></div>
         </div>
 
-        <div class="px-5 mt-5 space-y-1">
+        </section><section class="cb-settings-panel" aria-label="Account and settings"><h2>Account &amp; settings</h2><div class="space-y-1">
             ${FB.email
                 ? `<div class="w-full flex items-center gap-3 px-4 py-3.5 bg-white rounded-xl text-left"><i class="fas fa-circle-check text-green-500 w-5"></i><div class="min-w-0"><p class="font-semibold text-sm leading-tight">Account saved</p><p class="text-[11px] text-slate-400 truncate">${FB.email}</p></div>${isAdmin()?'<span class="ml-auto text-[10px] font-extrabold bg-gold/20 text-gold-deep px-2 py-1 rounded-full">ADMIN</span>':''}</div>`
                 : `<button onclick="fbSignInWithGoogle()" class="w-full flex items-center gap-3 px-4 py-3.5 bg-white rounded-xl text-left"><i class="fab fa-google text-ember w-5"></i><div><p class="font-semibold text-sm leading-tight">Save my account</p><p class="text-[11px] text-slate-400">Sign in with Google so you never lose your profile</p></div><i class="fas fa-chevron-right ml-auto text-slate-300 text-xs"></i></button>`}
@@ -1282,7 +1275,7 @@ function renderProfile(s) {
             <button onclick="logout()" class="w-full flex items-center gap-3 px-4 py-3.5 bg-white rounded-xl text-left"><i class="fas fa-right-from-bracket text-ink-soft w-5"></i><span class="font-semibold text-sm">Log out</span></button>
             <button onclick="confirmDeleteAccount()" class="w-full flex items-center gap-3 px-4 py-3.5 bg-white rounded-xl text-left text-red-600"><i class="fas fa-trash-can w-5"></i><span class="font-semibold text-sm">Delete my account</span></button>
         </div>
-        <!-- Legal / compliance links, required on every ORIZIS Zambia site -->
+        <!-- Legal documents stay next to account controls. -->
         <div class="mt-7 px-5 text-center">
             <div class="flex flex-wrap justify-center gap-x-4 gap-y-1.5 text-[11px]" style="color:var(--ink-mute)">
                 <a href="terms.html" class="hover:underline">Terms</a>
@@ -1295,7 +1288,7 @@ function renderProfile(s) {
             <p class="mt-2.5 text-[10px] leading-relaxed" style="color:var(--ink-mute)">ORIZIS TECHNOLOGIES LIMITED · TPIN 2002580846<br>office@orizisgroup.com</p>
             <p class="mt-3 text-[10px] tracking-[0.18em] uppercase" style="color:#c9c0c5">Chibwenzi · an ORIZIS TECHNOLOGY product</p>
         </div>
-    </div>`;
+    </section></div></div>`;
 }
 function logout() {
     if (!confirm('Log out and reset this demo profile?')) return;
@@ -1312,20 +1305,21 @@ function openProfileCard(id) {
     const ov = document.createElement('div');
     ov.className='fixed inset-0 z-[75] bg-black/60 flex items-end sm:items-center justify-center';
     ov.onclick = e => { if(e.target===ov) ov.remove(); };
-    ov.innerHTML = `<div class="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl max-h-[90vh] overflow-y-auto no-scrollbar fade-in">
+    ov.innerHTML = `<div class="cb-profile-sheet bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl max-h-[90vh] overflow-y-auto no-scrollbar fade-in">
         <div class="relative">
-            <img src="${p.photos[0]}" class="w-full h-80 object-cover">
-            <button onclick="this.closest('.fixed').remove()" class="absolute top-3 right-3 bg-black/50 text-white w-9 h-9 rounded-full"><i class="fas fa-xmark"></i></button>
+            <img src="${p.photos[0]}" alt="${cbEscape(p.name)}" class="cb-profile-main-image w-full h-80 object-cover">
+            <button type="button" aria-label="Close profile" onclick="this.closest('.fixed').remove()" class="absolute top-3 right-3 bg-black/50 text-white w-9 h-9 rounded-full"><i class="fas fa-xmark"></i></button>
         </div>
+        ${(p.photos||[]).length>1 ? `<div class="cb-photo-strip" aria-label="Profile photos">${p.photos.map((photo,i)=>`<button type="button" class="cb-photo-choice" aria-label="Photo ${i+1} of ${p.photos.length}" aria-pressed="${i===0}" data-photo="${cbEscape(photo)}" onclick="cbProfileImage(this)"><img src="${cbEscape(photo)}" alt=""></button>`).join('')}</div>` : ''}
         <div class="p-5">
-            <div class="flex items-center gap-2"><h2 class="text-2xl font-extrabold">${p.name}, ${p.age}</h2>${p.verified?'<i class="fas fa-circle-check text-blue-400"></i>':''}</div>
-            <p class="text-slate-500 text-sm mt-1"><i class="fas fa-location-dot mr-1"></i>${p.city}</p>
-            <p class="mt-3 text-slate-700">${p.bio}</p>
+            <div class="flex items-center gap-2"><h2 class="text-2xl font-extrabold">${cbEscape(p.name)}, ${p.age}</h2>${p.verified?'<i class="fas fa-circle-check text-blue-400"></i>':''}</div>
+            <p class="text-slate-500 text-sm mt-1"><i class="fas fa-location-dot mr-1"></i>${cbEscape(p.city)}</p>
+            <p class="mt-3 text-slate-700">${cbEscape(p.bio)}</p>
             <div class="flex flex-wrap gap-2 mt-4">${(p.interests||[]).map(x=>`<span class="pref-chip on !text-xs">${x}</span>`).join('')}</div>
-            <button onclick="reportProfile('${p.id}');this.closest('.fixed').remove()" class="mt-5 text-red-400 text-xs font-semibold"><i class="fas fa-flag mr-1"></i>Report or block ${p.name}</button>
+            <button onclick="reportProfile(${cbArg(p.id)});this.closest('.fixed').remove()" class="mt-5 text-red-400 text-xs font-semibold"><i class="fas fa-flag mr-1"></i>Report or block ${cbEscape(p.name)}</button>
         </div>
     </div>`;
-    document.body.appendChild(ov);
+    cbPresentDialog(ov);
 }
 
 /* ================================================================
@@ -1339,7 +1333,7 @@ function openSafety() {
         <div class="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-4"></div>
         <h2 class="text-xl font-display font-extrabold"><i class="fas fa-shield-halved text-ember-deep mr-1"></i>Your safety comes first</h2>
         <div class="mt-4 space-y-3 text-sm text-slate-600">
-            <p><i class="fas fa-hand-holding-dollar text-ember mr-2"></i><b>Never send money.</b> Anyone asking for money, airtime or gifts is a scam. Report them.</p>
+            <p><i class="fas fa-hand-holding-dollar text-ember mr-2"></i><b>Never send money.</b> Be cautious of anyone asking for money, airtime or gifts. Report suspicious requests.</p>
             <p><i class="fas fa-user-secret text-ember mr-2"></i><b>Keep private details private.</b> Don't share your home address, workplace, bank or Mobile Money PIN.</p>
             <p><i class="fas fa-location-dot text-ember mr-2"></i><b>Meet safely.</b> First meet in a public place, in daylight, and tell a friend where you are.</p>
             <p><i class="fas fa-flag text-ember mr-2"></i><b>Report &amp; block</b> anyone who makes you uncomfortable — our team reviews every report.</p>
@@ -1347,7 +1341,7 @@ function openSafety() {
         <a href="https://wa.me/${CONFIG.WHATSAPP_SUPPORT}" target="_blank" rel="noopener" class="mt-5 flex items-center justify-center gap-2 w-full bg-[#25D366] text-white font-bold py-3 rounded-full"><i class="fab fa-whatsapp"></i> Contact Chibwenzi support</a>
         <button onclick="this.closest('.fixed').remove()" class="mt-2 w-full text-slate-400 text-sm py-2">Close</button>
     </div>`;
-    document.body.appendChild(ov);
+    cbPresentDialog(ov);
 }
 function reportUser(id) { reportProfile(id); }
 function reportProfile(id) {
@@ -1358,14 +1352,14 @@ function reportProfile(id) {
     ov.onclick = e => { if(e.target===ov) ov.remove(); };
     ov.innerHTML = `<div class="bg-white w-full max-w-md rounded-t-3xl p-6 fade-in">
         <div class="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-4"></div>
-        <h2 class="text-lg font-extrabold">Report ${p.name}</h2>
-        <p class="text-sm text-slate-500 mt-1">Your report is confidential. Serious cases are removed fast.</p>
+        <h2 class="text-lg font-extrabold">Report ${cbEscape(p.name)}</h2>
+        <p class="text-sm text-slate-500 mt-1">Your report is shared with the moderation team. This person will also be blocked from your local view.</p>
         <div class="mt-4 space-y-2">
-            ${reasons.map(r=>`<button onclick="submitReport('${p.id}','${p.name}','${r.replace(/'/g,'')}')" class="w-full text-left px-4 py-3 bg-cream rounded-xl text-sm font-semibold hover:bg-cream-warm">${r}</button>`).join('')}
+            ${reasons.map(r=>`<button onclick="submitReport(${cbArg(p.id)},${cbArg(p.name)},${cbArg(r)})" class="w-full text-left px-4 py-3 bg-cream rounded-xl text-sm font-semibold hover:bg-cream-warm">${r}</button>`).join('')}
         </div>
         <button onclick="this.closest('.fixed').remove()" class="mt-3 w-full text-slate-400 text-sm py-2">Cancel</button>
     </div>`;
-    document.body.appendChild(ov);
+    cbPresentDialog(ov);
 }
 function submitReport(id, name, reason) {
     reports.unshift({ type:'report', targetId:id, targetName:name, reason, by:me.id, at:Date.now(), status:'open' });
@@ -1400,9 +1394,9 @@ function openLegal() {
             <p><b>Your safety.</b> Never send money to anyone you meet here. Meet in public. Report anything suspicious.</p>
             <p class="text-xs text-slate-400">This is a plain-language summary. The full Terms of Service and Privacy Policy apply. Questions? Contact support.</p>
         </div>
-        <button onclick="this.closest('.fixed').remove()" class="mt-4 w-full bg-rose-600 text-white font-bold py-3 rounded-full">Got it</button>
+        <nav class="cb-legal-links" aria-label="Legal documents"><a href="terms.html">Full Terms</a><a href="privacy.html">Privacy Policy</a><a href="community-guidelines.html">Community Rules</a></nav><button onclick="this.closest('.fixed').remove()" class="mt-4 w-full bg-rose-600 text-white font-bold py-3 rounded-full">Got it</button>
     </div>`;
-    document.body.appendChild(ov);
+    cbPresentDialog(ov);
 }
 
 /* ================================================================
@@ -1448,7 +1442,7 @@ function openPaywall(kind) {
             <p class="text-center text-[10px] text-slate-400 mt-2"><i class="fas fa-lock mr-1"></i>Secure Kwacha payment · MTN, Airtel &amp; Zamtel</p>
         </div>
     </div>`;
-    document.body.appendChild(ov);
+    cbPresentDialog(ov);
 }
 function payWith(sku, amount, label) {
     const pw = $('paywall'); if (pw) pw.remove();
@@ -1484,7 +1478,7 @@ function payWith(sku, amount, label) {
             <p class="text-xs text-slate-400 mt-3">Waiting for confirmation…</p>
         </div>
     </div>`;
-    document.body.appendChild(ov);
+    cbPresentDialog(ov);
 }
 let _net = null;
 function pickNet(n, el) { _net=n; document.querySelectorAll('.net-btn').forEach(b=>b.style.borderColor=''); el.style.borderColor='#198a00'; }
@@ -1536,7 +1530,7 @@ function showLaunchFreeNote() {
             <button onclick="this.closest('.fixed').remove()" class="btn-primary mt-5 w-full">Start swiping</button>
         </div>
     </div>`;
-    document.body.appendChild(ov);
+    cbPresentDialog(ov);
 }
 function payFailed() {
     const m = $('payModal'); if (m) m.remove();
@@ -1557,7 +1551,7 @@ function finalizePay(sku, amount) {
     ov.innerHTML = `<div class="w-24 h-24 rounded-full bg-white flex items-center justify-center heart-pop"><i class="fas fa-check text-zam-green text-4xl"></i></div>
         <h2 class="text-2xl font-extrabold mt-5">Payment confirmed! 🎉</h2>
         <p class="text-emerald-50 mt-1">Your ${sku==='premium_month'?'Premium':''} feature is now unlocked.</p>`;
-    document.body.appendChild(ov);
+    cbPresentDialog(ov);
     setTimeout(()=>{ ov.remove(); renderHome(); }, 1800);
 }
 // Applies the purchased entitlement AFTER payment is verified.

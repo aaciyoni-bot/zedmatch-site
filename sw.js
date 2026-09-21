@@ -1,9 +1,9 @@
 /* Chibwenzi service worker - enables app installation and basic offline shell */
-const CACHE = 'chibwenzi-v1';
+const CACHE = 'chibwenzi-warm-v2';
 
 self.addEventListener('install', e => {
     self.skipWaiting();
-    e.waitUntil(caches.open(CACHE).then(c => c.addAll(['./', './index.html', './manifest.json'])));
+    e.waitUntil(caches.open(CACHE).then(c => c.addAll(['./', './index.html', './manifest.json', './future-studio.css', './future-studio.js', './assets/chibwenzi-mark.png', './assets/chibwenzi-icon-192.png', './assets/chibwenzi-icon-512.png'])));
 });
 
 self.addEventListener('activate', e => {
