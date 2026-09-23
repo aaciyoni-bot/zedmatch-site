@@ -293,7 +293,45 @@ function showToast(msg, ms) {
    Firestore profiles drive real swipe→match→chat; SEED demo profiles
    keep the deck full during cold-start.
    ================================================================ */
-const FB = { on:false, uid:null, email:null, db:null, fs:null, auth:null, authMod:null, msgUnsub:null };
+const FB = { on:false, uid:null, email:null, db:null, fs:null, auth:null, authMod:null, msgUnsub:null, matchesUnsub:null };
+
+function fbStopSessionListeners() {
+    if (FB.msgUnsub) { FB.msgUnsub(); FB.msgUnsub = null; }
+    if (FB.matchesUnsub) { FB.matchesUnsub(); FB.matchesUnsub = null; }
+}
+
+// The first auth event arrives after Firebase has restored any persisted account.
+function fbReadyUser(auth, authMod) {
+    return new Promise((resolve, reject) => {
+        let settled = false, initialSeen = false, unsubscribe = null;
+        const stop = () => { if (unsubscribe) { const off = unsubscribe; unsubscribe = null; off(); } };
+        const finish = (error, user) => {
+            if (settled) return;
+            settled = true;
+            clearTimeout(timer);
+            stop();
+            if (error) reject(error);
+            else if (user) resolve(user);
+            else reject(new Error('No authenticated user returned'));
+        };
+        const timer = setTimeout(() => finish(new Error('auth timeout')), 12000);
+        try {
+            unsubscribe = authMod.onAuthStateChanged(auth, user => {
+                if (settled || initialSeen) return;
+                initialSeen = true;
+                stop();
+                if (user) { finish(null, user); return; }
+                // Only a confirmed empty session gets a new anonymous identity.
+                Promise.resolve().then(() => {
+                    if (settled) return null;
+                    return authMod.signInAnonymously(auth);
+                }).then(credential => finish(null, credential && credential.user), error => finish(error));
+            }, error => finish(error));
+            // Also clean up if an observer implementation delivers its first event synchronously.
+            if (initialSeen || settled) stop();
+        } catch (error) { finish(error); }
+    });
+}
 
 async function fbInit() {
     if (!FIREBASE_ON || !FIREBASE_CONFIG.apiKey) return false;
@@ -309,15 +347,9 @@ async function fbInit() {
         FB.db = fsMod.getFirestore(app);
         FB.auth = auth;
         FB.authMod = authMod;
-        await new Promise((resolve, reject) => {
-            const t = setTimeout(() => reject(new Error('auth timeout')), 12000);
-            authMod.onAuthStateChanged(auth, u => {
-                if (u) { FB.uid = u.uid; FB.email = u.email || null; clearTimeout(t); resolve(); }
-            });
-            // Anonymous gets people swiping instantly; they can attach Google later
-            // so the account survives a new phone or a cleared browser.
-            if (!auth.currentUser) authMod.signInAnonymously(auth).catch(reject);
-        });
+        const user = await fbReadyUser(auth, authMod);
+        FB.uid = user.uid;
+        FB.email = user.email || null;
         FB.on = true;
         return true;
     } catch (e) {
@@ -345,12 +377,19 @@ async function fbSignInWithGoogle() {
                 cred = await signInWithPopup(FB.auth, provider);   // existing account
             } else throw e;
         }
+        const uidChanged = FB.uid !== cred.user.uid;
+        if (uidChanged) {
+            fbStopSessionListeners();
+            matches = []; pool = []; likersCache = null; activeChatId = null;
+            localStorage.removeItem('chibwenzi_matches'); localStorage.removeItem('chibwenzi_whoLiked');
+        }
         FB.uid = cred.user.uid;
         FB.email = cred.user.email || null;
         const existing = await fbLoadProfile();
         if (existing) me = Object.assign(freshUser(), me || {}, existing, { id: FB.uid, ageConfirmed: true, agreedTerms: true });
         else if (me) { me.id = FB.uid; await fbSaveProfile(); }
         saveMe();
+        if (uidChanged) fbListenMatches();
         showToast(isAdmin() ? 'Signed in as admin 🛡️' : 'Account saved — you can sign in from any phone ✓', 3400);
         if (!me || !me.ageConfirmed) renderAgeGate();
         else if (!me.name || !me.gender || !me.photos.length) renderOnboarding();
@@ -430,10 +469,11 @@ async function fbSwipe(card, action) {
 
 // Real-time listener: merge my matches into the list as they appear.
 function fbListenMatches() {
+    if (FB.matchesUnsub) { FB.matchesUnsub(); FB.matchesUnsub = null; }
     if (!FB.on) return;
     try {
         const { collection, query, where, onSnapshot } = FB.fs;
-        onSnapshot(query(collection(FB.db, 'matches'), where('users', 'array-contains', FB.uid)), snap => {
+        FB.matchesUnsub = onSnapshot(query(collection(FB.db, 'matches'), where('users', 'array-contains', FB.uid)), snap => {
             let added = false;
             snap.forEach(d => {
                 const data = d.data();
@@ -1290,10 +1330,22 @@ function renderProfile(s) {
         </div>
     </section></div></div>`;
 }
-function logout() {
-    if (!confirm('Log out and reset this demo profile?')) return;
+let logoutPending = false;
+async function logout() {
+    if (logoutPending || !confirm('Log out of Chibwenzi?')) return;
+    logoutPending = true;
+    try {
+        if (FB.auth && FB.authMod) await FB.authMod.signOut(FB.auth);
+    } catch (error) {
+        logoutPending = false;
+        showToast('Could not log out. Please check your connection and try again.', 3400);
+        return;
+    }
+    fbStopSessionListeners();
+    FB.on = false; FB.uid = null; FB.email = null;
     localStorage.removeItem('chibwenzi_me'); localStorage.removeItem('chibwenzi_matches'); localStorage.removeItem('chibwenzi_whoLiked');
-    me=null; matches=[]; onbStep=0; activeTab='discover'; boot();
+    me=null; matches=[]; pool=[]; likersCache=null; onbStep=0; activeTab='discover'; activeChatId=null;
+    try { await boot(); } finally { logoutPending = false; }
 }
 
 /* ================================================================

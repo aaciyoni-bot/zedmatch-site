@@ -1,5 +1,5 @@
 /* Chibwenzi service worker - enables app installation and basic offline shell */
-const CACHE = 'chibwenzi-warm-v2';
+const CACHE = 'chibwenzi-auth-session-20260923';
 
 self.addEventListener('install', e => {
     self.skipWaiting();
