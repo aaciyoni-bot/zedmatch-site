@@ -363,41 +363,90 @@ async function fbInit() {
    same uid, so the profile, matches and chats all survive. If that Google
    account already exists we sign into it instead. Also how an admin is
    identified — see isAdmin(). */
-async function fbSignInWithGoogle() {
-    if (!FB.on) return showToast('Not connected — try again in a moment.');
-    const { GoogleAuthProvider, linkWithPopup, signInWithPopup } = FB.authMod;
+let fbGoogleBusy = false;
+function fbGoogleStatus(message, busy = false) {
+    document.querySelectorAll('[data-google-signin]').forEach(button => {
+        button.disabled = busy;
+        button.setAttribute('aria-busy', String(busy));
+    });
+    document.querySelectorAll('[data-auth-status]').forEach(node => { node.textContent = message; });
+}
+function fbGoogleErrorMessage(error) {
+    const messages = {
+        'auth/popup-blocked': 'Your browser blocked the Google window. Allow pop-ups for Chibwenzi, then tap Google again. If you opened this link inside another app, open it in Chrome or Safari.',
+        'auth/popup-closed-by-user': 'The Google window closed before sign-in finished. Tap Google to try again.',
+        'auth/cancelled-popup-request': 'A sign-in window is already open. Finish there or try again.',
+        'auth/unauthorized-domain': 'Google sign-in is not enabled for this website address. Please contact support.',
+        'auth/operation-not-allowed': 'Google sign-in is temporarily unavailable. Please contact support.',
+        'auth/network-request-failed': 'Could not reach Google. Check your connection and try again.',
+        'auth/web-storage-unsupported': 'Your browser is blocking sign-in storage. Open Chibwenzi in a regular Chrome or Safari tab.',
+        'auth/credential-already-in-use': 'Your Google account already exists. Tap Sign in with Google again to open it.',
+        'auth/account-exists-with-different-credential': 'This email already uses a different sign-in method. Please contact support to recover your account.'
+    };
+    return messages[error && error.code] || 'Could not complete sign-in. Please try again. If this continues, contact support.';
+}
+async function fbSignInWithGoogle(linkProfile = true) {
+    if (fbGoogleBusy) return;
+    // Google sign-in remains available even if anonymous sign-in failed.
+    if (!FB.auth || !FB.authMod) {
+        const message = 'Still connecting. Please reload the page and try again.';
+        fbGoogleStatus(message); showToast(message, 6000); return;
+    }
+    fbGoogleBusy = true;
+    fbGoogleStatus('Opening Google…', true);
+    const { GoogleAuthProvider, linkWithPopup, signInWithPopup, signInWithCredential } = FB.authMod;
     const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: 'select_account' });
+    let authenticated = false;
     try {
         let cred;
-        try {
-            cred = await linkWithPopup(FB.auth.currentUser, provider);
-        } catch (e) {
-            if (['auth/credential-already-in-use','auth/email-already-in-use','auth/provider-already-linked']
-                .includes(e.code)) {
-                cred = await signInWithPopup(FB.auth, provider);   // existing account
-            } else throw e;
+        // Open the popup directly from the user gesture, never after another await.
+        if (linkProfile && FB.auth.currentUser && FB.auth.currentUser.isAnonymous) {
+            try { cred = await linkWithPopup(FB.auth.currentUser, provider); }
+            catch (error) {
+                if (!['auth/credential-already-in-use', 'auth/email-already-in-use'].includes(error.code)) throw error;
+                const credential = GoogleAuthProvider.credentialFromError(error);
+                if (!credential) throw error;
+                // Reuse the completed Google response: a second popup is commonly blocked on phones.
+                cred = await signInWithCredential(FB.auth, credential);
+            }
+        } else {
+            cred = await signInWithPopup(FB.auth, provider);
         }
+        authenticated = true;
         const uidChanged = FB.uid !== cred.user.uid;
         if (uidChanged) {
             fbStopSessionListeners();
             matches = []; pool = []; likersCache = null; activeChatId = null;
+            me = null;
+            localStorage.removeItem('chibwenzi_me');
             localStorage.removeItem('chibwenzi_matches'); localStorage.removeItem('chibwenzi_whoLiked');
         }
         FB.uid = cred.user.uid;
         FB.email = cred.user.email || null;
-        const existing = await fbLoadProfile();
-        if (existing) me = Object.assign(freshUser(), me || {}, existing, { id: FB.uid, ageConfirmed: true, agreedTerms: true });
-        else if (me) { me.id = FB.uid; await fbSaveProfile(); }
+        FB.on = true;
+        fbGoogleStatus('Signed in. Loading your profile…', true);
+        const existing = await fbLoadProfile(true);
+        if (existing) me = Object.assign(freshUser(), me || {}, existing, { id: FB.uid, ageConfirmed: existing.age >= CONFIG.MIN_AGE, agreedTerms: true });
+        else if (me) me.id = FB.uid;
         saveMe();
         if (uidChanged) fbListenMatches();
-        showToast(isAdmin() ? 'Signed in as admin 🛡️' : 'Account saved — you can sign in from any phone ✓', 3400);
         if (!me || !me.ageConfirmed) renderAgeGate();
-        else if (!me.name || !me.gender || !me.photos.length) renderOnboarding();
+        else if (!me.name || !me.gender || !me.photos.length) { onbStep = 0; renderOnboarding(); }
         else { buildPool(); renderHome(); }
-    } catch (e) {
-        if (e.code === 'auth/popup-closed-by-user' || e.code === 'auth/cancelled-popup-request') return;
-        console.warn('google sign-in', e);
-        showToast('Sign-in failed. Please try again.', 3200);
+        showToast(isAdmin() ? 'Signed in as admin 🛡️' : 'Signed in with Google ✓', 3400);
+    } catch (error) {
+        // Log only the error code, never the OAuth response or credentials.
+        console.warn('Google sign-in:', error && error.code || 'unknown');
+        const message = authenticated
+            ? 'Google sign-in succeeded, but your profile could not load. Please reload to try again. Your saved profile has not been changed.'
+            : fbGoogleErrorMessage(error);
+        fbGoogleStatus(message); showToast(message, 9000);
+    } finally {
+        fbGoogleBusy = false;
+        document.querySelectorAll('[data-google-signin]').forEach(button => {
+            button.disabled = false; button.setAttribute('aria-busy', 'false');
+        });
     }
 }
 
@@ -418,13 +467,13 @@ async function fbSaveProfile() {
     } catch (e) { console.warn('fbSaveProfile', e && e.message); }
 }
 
-async function fbLoadProfile() {
+async function fbLoadProfile(strict = false) {
     if (!FB.on) return null;
     try {
         const { doc, getDoc } = FB.fs;
         const s = await getDoc(doc(FB.db, 'profiles', FB.uid));
         return s.exists() ? s.data() : null;
-    } catch (e) { return null; }
+    } catch (e) { if (strict) throw e; return null; }
 }
 
 // Load real opposite-gender candidates from Firestore.
@@ -633,10 +682,16 @@ async function boot() {
 
     await fbInit();
     if (FB.on) {
-        const prof = await fbLoadProfile();
-        const local = DB.load('me', null);
+        let prof;
+        try { prof = await fbLoadProfile(true); }
+        catch (error) {
+            app.innerHTML = '<main class="cb-denied"><h1>Let’s reconnect.</h1><p>Your account is signed in, but your profile could not load. Your saved profile has not been changed.</p><button type="button" class="cb-primary" onclick="boot()">Try again</button></main>';
+            return;
+        }
+        const saved = DB.load('me', null);
+        const local = saved && saved.id === FB.uid ? saved : null;
         if (prof) {
-            me = Object.assign(freshUser(), local || {}, prof, { id: FB.uid, ageConfirmed: true, agreedTerms: true });
+            me = Object.assign(freshUser(), local || {}, prof, { id: FB.uid, ageConfirmed: prof.age >= CONFIG.MIN_AGE, agreedTerms: true });
         } else {
             me = local ? Object.assign(local, { id: FB.uid }) : null;
         }
@@ -680,6 +735,11 @@ function renderAgeGate() {
                         <button type="button" onclick="confirmAge()" class="cb-primary">Yes, I'm 18 or older</button>
                         <button type="button" onclick="denyAge()" class="cb-age-no">I'm under 18</button>
                         <p class="cb-consent">By continuing, you agree to our <a href="terms.html">Terms</a> &amp; <a href="community-guidelines.html">Community Rules</a>. Read our <a href="privacy.html">Privacy Policy</a>.</p>
+                    </div>
+                    <div class="cb-returning" style="margin-top:20px">
+                        <p style="margin-bottom:8px">Already a member?</p>
+                        <button type="button" data-google-signin onclick="fbSignInWithGoogle(false)" class="cb-text-button" style="display:flex;align-items:center;justify-content:center;gap:10px;min-height:48px;padding:12px 20px;border:1px solid #d7bdc7;border-radius:12px;background:white;color:#711c31;font-weight:700"><i class="fab fa-google" aria-hidden="true"></i> Sign in with Google</button>
+                        <p data-auth-status role="status" aria-live="polite" style="font-size:13px;line-height:1.5;margin-top:8px"></p>
                     </div>
                     <p class="cb-brand-credit">AN ORIZIS TECHNOLOGY PRODUCT</p>
                 </div>
@@ -728,7 +788,7 @@ function onbShell(title, sub, body, footer) {
         <main class="cb-onb-card">
             <header><div class="cb-onb-step"><span>STEP ${onbStep + 1} OF 4</span><span>${labels[onbStep]}</span></div><div class="cb-step-track" aria-label="Step ${onbStep + 1} of 4">${[0,1,2,3].map(i => `<span class="${i<=onbStep?'complete':''}"></span>`).join('')}</div><h1>${title}</h1><p>${sub}</p></header>
             <div class="cb-onb-fields">${body}</div>
-            <footer>${footer}${onbStep>0?'<button type="button" class="cb-text-button" onclick="onbStep--;renderOnboarding()">Back</button>':''}</footer>
+            <footer>${footer}${onbStep===0?'<button type="button" data-google-signin onclick="fbSignInWithGoogle(false)" class="cb-text-button">Already a member? Sign in with Google</button><p data-auth-status role="status" aria-live="polite"></p>':''}${onbStep>0?'<button type="button" class="cb-text-button" onclick="onbStep--;renderOnboarding()">Back</button>':''}</footer>
         </main>
     </div>`;
 }
@@ -1307,7 +1367,7 @@ function renderProfile(s) {
         </section><section class="cb-settings-panel" aria-label="Account and settings"><h2>Account &amp; settings</h2><div class="space-y-1">
             ${FB.email
                 ? `<div class="w-full flex items-center gap-3 px-4 py-3.5 bg-white rounded-xl text-left"><i class="fas fa-circle-check text-green-500 w-5"></i><div class="min-w-0"><p class="font-semibold text-sm leading-tight">Account saved</p><p class="text-[11px] text-slate-400 truncate">${FB.email}</p></div>${isAdmin()?'<span class="ml-auto text-[10px] font-extrabold bg-gold/20 text-gold-deep px-2 py-1 rounded-full">ADMIN</span>':''}</div>`
-                : `<button onclick="fbSignInWithGoogle()" class="w-full flex items-center gap-3 px-4 py-3.5 bg-white rounded-xl text-left"><i class="fab fa-google text-ember w-5"></i><div><p class="font-semibold text-sm leading-tight">Save my account</p><p class="text-[11px] text-slate-400">Sign in with Google so you never lose your profile</p></div><i class="fas fa-chevron-right ml-auto text-slate-300 text-xs"></i></button>`}
+                : `<button type="button" data-google-signin onclick="fbSignInWithGoogle()" class="w-full flex items-center gap-3 px-4 py-3.5 bg-white rounded-xl text-left"><i class="fab fa-google text-ember w-5"></i><div><p class="font-semibold text-sm leading-tight">Save my account</p><p class="text-[11px] text-slate-400">Sign in with Google so you never lose your profile</p></div><i class="fas fa-chevron-right ml-auto text-slate-300 text-xs"></i></button>`}
             <button onclick="onbStep=0;renderOnboarding()" class="w-full flex items-center gap-3 px-4 py-3.5 bg-white rounded-xl text-left"><i class="fas fa-pen text-ember w-5"></i><span class="font-semibold text-sm">Edit profile</span><i class="fas fa-chevron-right ml-auto text-slate-300 text-xs"></i></button>
             <button onclick="openSafety()" class="w-full flex items-center gap-3 px-4 py-3.5 bg-white rounded-xl text-left"><i class="fas fa-shield-halved text-ember w-5"></i><span class="font-semibold text-sm">Safety center</span><i class="fas fa-chevron-right ml-auto text-slate-300 text-xs"></i></button>
             <a href="https://wa.me/${CONFIG.WHATSAPP_SUPPORT}" target="_blank" rel="noopener" class="w-full flex items-center gap-3 px-4 py-3.5 bg-white rounded-xl text-left"><i class="fab fa-whatsapp text-green-500 w-5"></i><span class="font-semibold text-sm">Contact support</span><i class="fas fa-chevron-right ml-auto text-slate-300 text-xs"></i></a>
