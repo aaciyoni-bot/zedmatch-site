@@ -158,9 +158,9 @@ const CONFIG = {
     API_BASE_URL: "https://chibwenzi-backend.vercel.app",
 
     // Support contact (business number — never a private phone).
-    WHATSAPP_SUPPORT: "260971234567",
+    WHATSAPP_SUPPORT: "260979237089",
 
-    // Pilot cities — launch hyper-local. Keep this short at first (one city).
+    // Suggestions only: members can enter any city or town in Zambia.
     CITIES: ["Lusaka", "Ndola", "Kitwe", "Livingstone", "Kabwe", "Chingola"],
 
     MIN_AGE: 18,
@@ -268,7 +268,7 @@ function todayStr() {
 function freshUser() {
     return {
         id: 'me_' + Math.random().toString(36).slice(2, 9),
-        name: '', age: null, gender: '', seeking: '', city: CONFIG.CITIES[0],
+        name: '', age: null, gender: '', seeking: '', city: '',
         bio: '', interests: [], photos: [], selfie: null,
         verified: false, verifyStatus: 'none', // none | pending | approved | rejected
         premium: false, premiumUntil: 0,
@@ -507,8 +507,8 @@ async function fbSwipe(card, action) {
             const users = [FB.uid, card.id].sort();
             await setDoc(doc(FB.db, 'matches', users.join('_')), {
                 users, at: Date.now(),
-                profiles: { [FB.uid]: { name: me.name, photo: (me.photos||[])[0] || '' },
-                            [card.id]: { name: card.name, photo: (card.photos||[])[0] || '' } }
+                profiles: { [FB.uid]: { name: me.name, city: me.city, photo: (me.photos||[])[0] || '' },
+                            [card.id]: { name: card.name, city: card.city || '', photo: (card.photos||[])[0] || '' } }
             }, { merge: true });
             return card;
         }
@@ -530,7 +530,7 @@ function fbListenMatches() {
                 if (matches.find(m => m.id === other)) return;
                 const info = (data.profiles && data.profiles[other]) || {};
                 matches.unshift({ id: other, _real: true, matchId: d.id, at: data.at || Date.now(), unread: true, messages: [],
-                    profile: { id: other, name: info.name || 'Someone', city: me.city, verified: false,
+                    profile: { id: other, name: info.name || 'Someone', city: info.city || '', verified: false,
                                photos: [info.photo || ''] } });
                 added = true;
             });
@@ -729,7 +729,7 @@ function renderAgeGate() {
                 <div class="cb-hero-copy">
                     <h1 id="cbHeroTitle">Good things<br>start with hello.</h1>
                     <div class="cb-hero-rule" aria-hidden="true"></div>
-                    <p class="cb-hero-lead">Meet people in Zambia. Share a little of yourself. See where a conversation takes you.</p>
+                    <p class="cb-hero-lead">Meet people across Zambia. Share a little of yourself. See where a conversation takes you.</p>
                     <div class="cb-age-panel">
                         <h2>This is a space for adults ${CONFIG.MIN_AGE}+.</h2>
                         <button type="button" onclick="confirmAge()" class="cb-primary">Yes, I'm 18 or older</button>
@@ -812,10 +812,10 @@ function onbBasics() {
             </div>
         </div>
         <div>
-            <label for="onbCity" class="text-sm font-bold text-slate-600 block mb-2">Your city</label>
-            <select id="onbCity" class="w-full border-2 border-cream-warm focus:border-rose-500 rounded-xl px-4 py-3 outline-none bg-white">
-                ${CONFIG.CITIES.map(c => `<option ${me.city===c?'selected':''}>${c}</option>`).join('')}
-            </select>
+            <label for="onbCity" class="text-sm font-bold text-slate-600 block mb-2">Your city or town in Zambia</label>
+            <input id="onbCity" list="zambiaCities" type="text" maxlength="80" autocomplete="address-level2" value="${cbEscape(me.city || '')}" placeholder="Enter your city or town" class="w-full border-2 border-cream-warm focus:border-rose-500 rounded-xl px-4 py-3 outline-none bg-white">
+            <datalist id="zambiaCities">${CONFIG.CITIES.map(c => `<option value="${cbEscape(c)}"></option>`).join('')}</datalist>
+            <p class="text-xs text-slate-500 mt-2">Open to adults across Zambia. Choose a suggestion or enter any other city or town.</p>
             <p class="text-[11px] text-slate-400 mt-1.5"><i class="fas fa-lock mr-1"></i>Only your city is ever shown — never your exact location.</p>
         </div>
     </div>`,
@@ -825,10 +825,12 @@ function setGender(g) { me.name = $('onbName').value; me.age = $('onbAge').value
 function saveBasics() {
     const name = $('onbName').value.trim();
     const age = parseInt($('onbAge').value);
+    const city = $('onbCity').value.trim();
     if (!name) return showToast('Please enter your name');
     if (!age || age < CONFIG.MIN_AGE) return showToast('You must be 18 or older');
     if (!me.gender) return showToast('Please select if you are a man or woman');
-    me.name = name; me.age = age; me.city = $('onbCity').value;
+    if (!city || city.length > 80) return showToast('Please enter your city or town in Zambia (up to 80 characters).');
+    me.name = name; me.age = age; me.city = city;
     // Hetero-only pilot: seeking is the opposite gender (set in setGender)
     me.seeking = me.gender === 'm' ? 'f' : 'm';
     saveMe(); onbStep = 1; renderOnboarding();
@@ -1074,7 +1076,7 @@ function renderDeck() {
         deck.innerHTML = `<div class="cb-empty">
             <img src="assets/chibwenzi-mark.png" alt="Chibwenzi" class="w-16 h-16 object-contain">
             <h3 class="mt-4 font-bold text-lg">No one new right now</h3>
-            <p class="text-slate-500 text-sm mt-1.5 leading-relaxed">Chibwenzi is just getting started in ${me.city}. Invite your friends — the more people here, the better your matches.</p>
+            <p class="text-slate-500 text-sm mt-1.5 leading-relaxed">Chibwenzi is growing across Zambia. Invite your friends — wherever you live in Zambia, your next connection could start here.</p>
             <button onclick="shareInvite()" class="btn-primary mt-5 !py-3 !px-7"><i class="fas fa-user-plus mr-1.5"></i>Invite friends</button>
             <button type="button" onclick="buildPool();renderDeck()" class="cb-text-button">Refresh profiles</button>
             <textarea id="shareText" class="sr-only" aria-hidden="true">${share}</textarea>
@@ -1338,7 +1340,7 @@ function renderProfile(s) {
             <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
             <div class="absolute bottom-4 left-5 text-white">
                 <h2 class="text-2xl font-extrabold">${cbEscape(me.name)}, ${me.age}</h2>
-                <p class="text-white/80 text-sm"><i class="fas fa-location-dot mr-1"></i>${me.city}</p>
+                <p class="text-white/80 text-sm"><i class="fas fa-location-dot mr-1"></i>${cbEscape(me.city)}</p>
             </div>
             ${hasPremium()?'<span class="absolute top-4 right-4 bg-gold text-black text-[11px] font-extrabold px-3 py-1 rounded-full"><i class="fas fa-crown"></i> PREMIUM</span>':''}
         </div>
@@ -1522,7 +1524,7 @@ function openPaywall(kind) {
     const PERKS = ['Unlimited likes — swipe as much as you want',
                    'See everyone who likes you',
                    'Unlimited Super Likes',
-                   'Boost — be seen first in ' + me.city,
+                   'Boost — be seen first in ' + cbEscape(me.city),
                    'Priority support'];
     const plans = {
         premium:   { icon:'crown', title:'Chibwenzi Premium', price:P.premium_month, unit:'/month', perks:PERKS, sku:'premium_month' },
@@ -1743,7 +1745,7 @@ function renderAdmin(s) {
                     <img src="${(p.photos&&p.photos[0])||''}" alt="" class="w-11 h-11 rounded-lg object-cover bg-cream-warm shrink-0">
                     <div class="min-w-0 flex-1">
                         <p class="font-bold text-sm truncate">${p.name||'—'}${p.age?', '+p.age:''} ${p.verified?'<i class="fas fa-circle-check text-blue-400 text-xs"></i>':''}</p>
-                        <p class="text-[11px] text-slate-400 truncate">${p.gender==='f'?'Woman':'Man'} · ${p.city||'—'}</p>
+                        <p class="text-[11px] text-slate-400 truncate">${p.gender==='f'?'Woman':'Man'} · ${cbEscape(p.city||'—')}</p>
                     </div>
                 </div>`).join('')}
         </div>

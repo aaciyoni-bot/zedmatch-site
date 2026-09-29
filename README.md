@@ -3,7 +3,7 @@
 Zambia's own **Tinder-style dating app** — swipe → match → chat — with
 **Mobile Money** monetization. An ORIZIS TECHNOLOGY product.
 
-Pilot: **one city, man↔woman matching only** (see *Safety & legal* below).
+Pilot: **all Zambia, man↔woman matching only** (see *Safety & legal* below).
 
 ## What's here
 - `index.html` — the whole app (single-file PWA). Runs in DEMO mode out of the box.
