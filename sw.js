@@ -1,5 +1,5 @@
 /* Chibwenzi service worker - enables app installation and basic offline shell */
-const CACHE = 'zedmatch-site-contact-20260929';
+const CACHE = 'zedmatch-site-registration-20260930';
 
 self.addEventListener('install', e => {
     self.skipWaiting();
