@@ -386,7 +386,7 @@ function fbGoogleErrorMessage(error) {
     return messages[error && error.code] || 'Could not complete sign-in. Please try again. If this continues, contact support.';
 }
 async function fbSignInWithGoogle(linkProfile = true) {
-    if (fbGoogleBusy) return;
+    if (fbGoogleBusy || registrationBusy) return;
     // Google sign-in remains available even if anonymous sign-in failed.
     if (!FB.auth || !FB.authMod) {
         const message = 'Still connecting. Please reload the page and try again.';
@@ -414,26 +414,8 @@ async function fbSignInWithGoogle(linkProfile = true) {
             cred = await signInWithPopup(FB.auth, provider);
         }
         authenticated = true;
-        const uidChanged = FB.uid !== cred.user.uid;
-        if (uidChanged) {
-            fbStopSessionListeners();
-            matches = []; pool = []; likersCache = null; activeChatId = null;
-            me = null;
-            localStorage.removeItem('chibwenzi_me');
-            localStorage.removeItem('chibwenzi_matches'); localStorage.removeItem('chibwenzi_whoLiked');
-        }
-        FB.uid = cred.user.uid;
-        FB.email = cred.user.email || null;
-        FB.on = true;
-        fbGoogleStatus('Signed in. Loading your profile…', true);
-        const existing = await fbLoadProfile(true);
-        if (existing) me = Object.assign(freshUser(), me || {}, existing, { id: FB.uid, ageConfirmed: existing.age >= CONFIG.MIN_AGE, agreedTerms: true });
-        else if (me) me.id = FB.uid;
-        saveMe();
-        if (uidChanged) fbListenMatches();
-        if (!me || !me.ageConfirmed) renderAgeGate();
-        else if (!me.name || !me.gender || !me.photos.length) { onbStep = 0; renderOnboarding(); }
-        else { buildPool(); renderHome(); }
+        await fbAcceptAuthenticatedUser(cred.user);
+        await loadRegistrationContact();
         showToast(isAdmin() ? 'Signed in as admin 🛡️' : 'Signed in with Google ✓', 3400);
     } catch (error) {
         // Log only the error code, never the OAuth response or credentials.
@@ -448,6 +430,163 @@ async function fbSignInWithGoogle(linkProfile = true) {
             button.disabled = false; button.setAttribute('aria-busy', 'false');
         });
     }
+}
+
+async function fbAcceptAuthenticatedUser(user) {
+    contactReadyUid = null;
+    const uidChanged = FB.uid !== user.uid;
+    if (uidChanged) {
+        fbStopSessionListeners();
+        matches = []; pool = []; likersCache = null; activeChatId = null;
+        me = null;
+        localStorage.removeItem('chibwenzi_me');
+        localStorage.removeItem('chibwenzi_matches'); localStorage.removeItem('chibwenzi_whoLiked');
+    }
+    FB.uid = user.uid;
+    FB.email = user.email || null;
+    FB.on = true;
+    fbGoogleStatus('Signed in. Loading your profile…', true);
+    const existing = await fbLoadProfile(true);
+    if (existing) me = Object.assign(freshUser(), me || {}, existing, { id: FB.uid, ageConfirmed: existing.age >= CONFIG.MIN_AGE, agreedTerms: true });
+    else if (me) me.id = FB.uid;
+    saveMe();
+    if (uidChanged) fbListenMatches();
+}
+
+// Contact data is deliberately never copied into me, localStorage or profiles.
+let contactReadyUid = null;
+let registrationBusy = false;
+function normalizeRegistrationPhone(value) {
+    let phone = String(value || '').replace(/[\s()-]/g, '');
+    if (/^0[79]\d{8}$/.test(phone)) phone = '+260' + phone.slice(1);
+    else if (/^[79]\d{8}$/.test(phone)) phone = '+260' + phone;
+    else if (/^260[79]\d{8}$/.test(phone)) phone = '+' + phone;
+    return /^\+260[79]\d{8}$/.test(phone) ? phone : null;
+}
+function registrationComplete() {
+    const user = FB.auth && FB.auth.currentUser;
+    return !!(user && !user.isAnonymous && contactReadyUid === user.uid);
+}
+function registrationMessage(message) {
+    const node = $('registrationStatus');
+    if (node) node.textContent = message;
+}
+function registrationError(error) {
+    const messages = {
+        'auth/email-already-in-use': 'This email already has an account. Sign in using email or Google instead.',
+        'auth/invalid-credential': 'The email or password is incorrect. Try again or reset your password.',
+        'auth/wrong-password': 'The email or password is incorrect. Try again or reset your password.',
+        'auth/user-not-found': 'The email or password is incorrect. Try again or reset your password.',
+        'auth/weak-password': 'Choose a stronger password with at least 8 characters.',
+        'auth/invalid-email': 'Enter a valid email address.',
+        'auth/operation-not-allowed': 'Email sign-in is currently unavailable. Please try Google or contact support.',
+        'auth/too-many-requests': 'Too many attempts. Please wait a little before trying again.',
+        'auth/network-request-failed': 'Check your connection and try again.'
+    };
+    return messages[error && error.code] || 'Could not finish this step. Please try again. Your saved profile has not been changed.';
+}
+function renderRegistration(mode = 'signup') {
+    app.className = 'cb-app cb-onboarding';
+    const user = FB.auth && FB.auth.currentUser;
+    const signedIn = user && !user.isAnonymous;
+    const signup = mode === 'signup';
+    app.innerHTML = `<main class="cb-onb-card" style="max-width:520px;margin:24px auto;padding:28px">
+        <a href="./" class="cb-logo"><img src="assets/chibwenzi-mark.png" alt=""><span>Chibwenzi</span></a>
+        <h1 style="margin-top:28px">${signedIn ? 'Your private contact details' : signup ? 'Create your account' : 'Welcome back'}</h1>
+        <p>${signedIn ? 'Add your Zambian mobile number to complete registration. It will never appear on your dating profile. This does not verify ownership of the number.' : 'Meet people across Zambia. Choose Google or email to continue.'}</p>
+        ${signedIn ? `<form onsubmit="saveRegistrationPhone(event)" style="margin-top:24px">
+            <label for="registrationPhone">Mobile number</label>
+            <input id="registrationPhone" type="tel" autocomplete="tel" inputmode="tel" placeholder="+260 97 123 4567" required maxlength="24" class="w-full border-2 rounded-xl px-4 py-3 my-3">
+            <button type="submit" class="cb-primary w-full">Save and continue</button>
+        </form><button type="button" onclick="loadRegistrationContact()" class="cb-text-button">Already added your number? Retry</button>` : `
+        <button type="button" data-google-signin onclick="fbSignInWithGoogle(${signup})" class="cb-primary w-full" style="margin-top:24px">Continue with Google</button>
+        <p style="text-align:center;margin:18px 0">or use email</p>
+        <form onsubmit="submitEmailRegistration(event, '${mode}')">
+            <label for="registrationEmail">Email address</label>
+            <input id="registrationEmail" type="email" autocomplete="email" required maxlength="254" class="w-full border-2 rounded-xl px-4 py-3 my-3">
+            <label for="registrationPassword">Password${signup ? ' (at least 8 characters)' : ''}</label>
+            <input id="registrationPassword" type="password" autocomplete="${signup ? 'new-password' : 'current-password'}" required ${signup ? 'minlength="8"' : ''} class="w-full border-2 rounded-xl px-4 py-3 my-3">
+            <button type="submit" class="cb-primary w-full">${signup ? 'Create account with email' : 'Sign in with email'}</button>
+        </form>
+        <button type="button" class="cb-text-button" onclick="renderRegistration('${signup ? 'signin' : 'signup'}')">${signup ? 'Already have an account? Sign in' : 'New here? Create an account'}</button>
+        <button type="button" class="cb-text-button" onclick="resetRegistrationPassword()">Forgot password?</button>`}
+        <p id="registrationStatus" role="status" aria-live="polite" style="margin-top:16px"></p>
+        <p data-auth-status role="status" aria-live="polite"></p>
+        <p style="margin-top:20px;font-size:13px">Your number stays private. <a href="privacy.html">Privacy policy</a></p>
+    </main>`;
+}
+function resumeRegistration() {
+    if (!me || !me.ageConfirmed) return renderAgeGate();
+    if (!registrationComplete()) return renderRegistration();
+    if (!me.name || !me.gender || !me.photos.length) { onbStep = 0; return renderOnboarding(); }
+    buildPool(); renderHome();
+}
+async function loadRegistrationContact() {
+    const user = FB.auth && FB.auth.currentUser;
+    contactReadyUid = null;
+    if (!user || user.isAnonymous) return resumeRegistration();
+    try {
+        const snap = await FB.fs.getDoc(FB.fs.doc(FB.db, 'chibwenziContacts', user.uid));
+        if (FB.auth.currentUser?.uid !== user.uid) return;
+        if (snap.exists() && normalizeRegistrationPhone(snap.data().phone)) contactReadyUid = user.uid;
+        resumeRegistration();
+    } catch (error) {
+        renderRegistration();
+        registrationMessage('Could not load your private contact details. Check your connection and tap Retry.');
+    }
+}
+async function saveRegistrationPhone(event) {
+    event.preventDefault();
+    if (registrationBusy) return;
+    const user = FB.auth && FB.auth.currentUser;
+    if (!user || user.isAnonymous) return renderRegistration();
+    const phone = normalizeRegistrationPhone($('registrationPhone').value);
+    if (!phone) return registrationMessage('Enter a Zambian mobile number, for example +260 97 123 4567.');
+    registrationBusy = true;
+    registrationMessage('Saving your private contact details…');
+    try {
+        await FB.fs.setDoc(FB.fs.doc(FB.db, 'chibwenziContacts', user.uid), {phone, updatedAt: FB.fs.serverTimestamp()});
+        if (FB.auth.currentUser?.uid !== user.uid) return;
+        contactReadyUid = user.uid;
+        resumeRegistration();
+    } catch (error) { registrationMessage('Your number could not be saved. Please check your connection and try again.'); }
+    finally { registrationBusy = false; }
+}
+async function submitEmailRegistration(event, mode) {
+    event.preventDefault();
+    if (registrationBusy || fbGoogleBusy) return;
+    if (!FB.auth || !FB.authMod) return registrationMessage('Still connecting. Reload the page and try again.');
+    const email = $('registrationEmail').value.trim();
+    const password = $('registrationPassword').value;
+    if (mode === 'signup' && password.length < 8) return registrationMessage('Choose a password with at least 8 characters.');
+    registrationBusy = true;
+    registrationMessage('Connecting securely…');
+    let authenticated = false;
+    try {
+        const auth = FB.authMod;
+        let credential;
+        if (mode === 'signin') credential = await auth.signInWithEmailAndPassword(FB.auth, email, password);
+        else if (FB.auth.currentUser?.isAnonymous) credential = await auth.linkWithCredential(FB.auth.currentUser, auth.EmailAuthProvider.credential(email, password));
+        else credential = await auth.createUserWithEmailAndPassword(FB.auth, email, password);
+        authenticated = true;
+        $('registrationPassword').value = '';
+        await fbAcceptAuthenticatedUser(credential.user);
+        await loadRegistrationContact();
+    } catch (error) {
+        registrationMessage(authenticated ? 'Signed in, but your profile could not load. Reload to retry safely.' : registrationError(error));
+    } finally { registrationBusy = false; }
+}
+async function resetRegistrationPassword() {
+    if (registrationBusy || !FB.authMod) return;
+    const input = $('registrationEmail');
+    if (!input || !input.reportValidity()) return;
+    registrationBusy = true;
+    try {
+        await FB.authMod.sendPasswordResetEmail(FB.auth, input.value.trim());
+        registrationMessage('If this email has an account, you will receive a password-reset email. Check your inbox and spam folder.');
+    } catch (error) {
+        registrationMessage(error.code === 'auth/user-not-found' ? 'If this email has an account, you will receive a password-reset email.' : registrationError(error));
+    } finally { registrationBusy = false; }
 }
 
 // Persist my profile (only once it's a real 18+ profile, to satisfy rules).
@@ -575,6 +714,7 @@ async function fbDeleteAccount() {
     const { doc, deleteDoc, collection, query, where, getDocs } = FB.fs;
     const del = async (ref) => { try { await deleteDoc(ref); } catch (e) {} };
     try {
+        await deleteDoc(doc(FB.db, 'chibwenziContacts', FB.uid));
         // swipes I made
         const mine = await getDocs(query(collection(FB.db, 'swipes'), where('by', '==', FB.uid)));
         for (const d of mine.docs) await del(d.ref);
@@ -705,6 +845,7 @@ async function boot() {
     // Premium expiry
     if (me && me.premium && me.premiumUntil && Date.now() > me.premiumUntil) { me.premium = false; saveMe(); }
 
+    if (FB.auth?.currentUser && !FB.auth.currentUser.isAnonymous) return loadRegistrationContact();
     if (!me || !me.ageConfirmed) return renderAgeGate();
     if (!me.name || !me.gender || !me.photos.length) return renderOnboarding();
     renderHome();
@@ -737,7 +878,7 @@ function renderAgeGate() {
                         <p class="cb-consent">By continuing, you agree to our <a href="terms.html">Terms</a> &amp; <a href="community-guidelines.html">Community Rules</a>. Read our <a href="privacy.html">Privacy Policy</a>.</p>
                     </div>
                     <div class="cb-returning" style="margin-top:20px">
-                        <p style="margin-bottom:8px">Already a member?</p>
+                        <p style="margin-bottom:8px">Already a member?</p><button type="button" onclick="renderRegistration('signin')" class="cb-text-button">Sign in with email</button>
                         <button type="button" data-google-signin onclick="fbSignInWithGoogle(false)" class="cb-text-button" style="display:flex;align-items:center;justify-content:center;gap:10px;min-height:48px;padding:12px 20px;border:1px solid #d7bdc7;border-radius:12px;background:white;color:#711c31;font-weight:700"><i class="fab fa-google" aria-hidden="true"></i> Sign in with Google</button>
                         <p data-auth-status role="status" aria-live="polite" style="font-size:13px;line-height:1.5;margin-top:8px"></p>
                     </div>
@@ -774,6 +915,7 @@ function denyAge() {
    ================================================================ */
 let onbStep = 0;
 function renderOnboarding() {
+    if (!registrationComplete()) return renderRegistration();
     if (!me) me = freshUser();
     const steps = [onbBasics, onbPhotos, onbAbout, onbVerify];
     onbStep = Math.min(onbStep, steps.length - 1);
@@ -1021,6 +1163,7 @@ function cbNavItems() {
     ].map(([id,icon,label]) => `<button type="button" class="cb-nav-item ${activeTab===id?'active':''}" ${activeTab===id?'aria-current="page"':''} onclick="switchTab('${id}')"><i class="fas fa-${icon}" aria-hidden="true"></i><span>${label}</span>${id==='matches'&&matches.length?`<b>${matches.length}</b>`:''}</button>`).join('');
 }
 function renderHome() {
+    if (!registrationComplete()) return renderRegistration();
     if (!pool.length && activeTab === 'discover') buildPool();
     app.className = 'cb-app cb-authenticated';
     app.innerHTML = `

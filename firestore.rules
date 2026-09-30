@@ -16,6 +16,18 @@ service cloud.firestore {
         : request.resource.data.users[0];
     }
 
+    // Private contact information; never readable by other members.
+    match /chibwenziContacts/{userId} {
+      allow get, delete: if signedIn() && userId == uid();
+      allow list: if false;
+      allow create, update: if signedIn() && userId == uid()
+        && request.auth.token.firebase.sign_in_provider != 'anonymous'
+        && request.resource.data.keys().hasOnly(['phone', 'updatedAt'])
+        && request.resource.data.phone is string
+        && request.resource.data.phone.matches('^[+]260[79][0-9]{8}$')
+        && request.resource.data.updatedAt == request.time;
+    }
+
     // ---- profiles ----
     // Any signed-in user can read profiles (discovery). A user may only
     // create/edit their OWN profile, and must be 18+. Exact location and phone
