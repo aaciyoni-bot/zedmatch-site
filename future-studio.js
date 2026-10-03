@@ -65,3 +65,44 @@ function cbProfileImage(button) {
     image.src = button.dataset.photo;
     sheet.querySelectorAll('.cb-photo-choice').forEach(el => el.setAttribute('aria-pressed',String(el===button)));
 }
+
+/* Presentation-only brand refresh; does not read or write member data. */
+function cbRefreshBrand() {
+    const root = document.getElementById('app');
+    if (!root) return;
+    root.querySelectorAll('img[src="assets/chibwenzi-mark.png"]').forEach(image => {
+        image.src = 'assets/chibwenzi-mark-v2.svg';
+    });
+    root.querySelectorAll('.cb-logo>span').forEach(wordmark => {
+        if (wordmark.firstChild?.nodeType === Node.TEXT_NODE && wordmark.firstChild.textContent !== 'chibwenzi') {
+            wordmark.firstChild.textContent = 'chibwenzi';
+        }
+        const tagline = wordmark.querySelector('small');
+        if (tagline && tagline.textContent !== 'REAL PEOPLE. REAL CONNECTIONS.') {
+            tagline.textContent = 'REAL PEOPLE. REAL CONNECTIONS.';
+        }
+    });
+    const lead = root.querySelector('.cb-hero-lead');
+    const copy = 'Meet genuine people across Zambia looking for a relationship. Start with a hello and see where it takes you.';
+    if (lead && lead.textContent !== copy) lead.textContent = copy;
+    const agePanel = root.querySelector('.cb-age-panel');
+    if (agePanel && !root.querySelector('.cb-free-signup')) {
+        const offer = document.createElement('p');
+        offer.className = 'cb-free-signup';
+        offer.append('Join for free ');
+        const age = document.createElement('span');
+        age.textContent = '· Adults 18+';
+        offer.append(age);
+        agePanel.before(offer);
+    }
+}
+const cbBrandRoot = document.getElementById('app');
+if (cbBrandRoot) {
+    cbRefreshBrand();
+    const cbBrandObserver = new MutationObserver(() => {
+        cbBrandObserver.disconnect();
+        cbRefreshBrand();
+        cbBrandObserver.observe(cbBrandRoot, { childList: true, subtree: true });
+    });
+    cbBrandObserver.observe(cbBrandRoot, { childList: true, subtree: true });
+}

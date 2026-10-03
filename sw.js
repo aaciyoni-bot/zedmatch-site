@@ -1,9 +1,9 @@
 /* Chibwenzi service worker - enables app installation and basic offline shell */
-const CACHE = 'zedmatch-site-registration-20260930';
+const CACHE = 'chibwenzi-brand-20261003-v2';
 
 self.addEventListener('install', e => {
     self.skipWaiting();
-    e.waitUntil(caches.open(CACHE).then(c => c.addAll(['./', './index.html', './manifest.json', './future-studio.css', './future-studio.js', './assets/chibwenzi-mark.png', './assets/chibwenzi-icon-192.png', './assets/chibwenzi-icon-512.png'])));
+    e.waitUntil(caches.open(CACHE).then(c => c.addAll(['./', './index.html', './manifest.json', './future-studio.css', './future-studio.js', './assets/chibwenzi-mark-v2.svg', './assets/chibwenzi-icon-v2-192.png', './assets/chibwenzi-icon-v2-512.png'])));
 });
 
 self.addEventListener('activate', e => {

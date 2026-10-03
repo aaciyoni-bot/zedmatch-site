@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
-  <rect width="64" height="64" rx="16" fill="#fff8fa"/><g transform="translate(6.4 6.4) scale(.8)"><title>Chibwenzi — two sides, one connection</title>
+  <title>Chibwenzi — two sides, one connection</title>
   <path d="M29 19C20 7 6 14 9 27c2 9 12 17 20 24" stroke="#ec315b" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
   <path d="M35 19C44 7 58 14 55 27c-2 9-12 17-20 24" stroke="#6b1634" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
   <circle cx="27" cy="31" r="3.5" fill="#ec315b"/>
   <circle cx="37" cy="31" r="3.5" fill="#6b1634"/>
-</g></svg>
+</svg>

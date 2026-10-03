@@ -230,3 +230,29 @@ body.bg-cream,.cb-public {background:var(--cream)}
 .cb-hero h1 {letter-spacing:-.045em}
 @media(min-width:701px){.cb-age-panel h2 {font-size:18px}.cb-age-panel>.cb-primary {font-size:19px}.cb-consent {font-size:12.5px;line-height:1.7}.cb-brand-credit {font-size:9px;letter-spacing:1.6px}}
 @media(min-width:701px) and (max-width:900px){.cb-age-panel h2 {font-size:14px}.cb-age-panel>.cb-primary {font-size:15px}.cb-consent {font-size:11px}}
+
+/* Chibwenzi connection mark and mobile-readable wordmark — October 2026. */
+.cb-logo {gap:10px;min-width:0}
+.cb-logo img {width:48px;height:48px;object-fit:contain}
+.cb-logo>span {font-family:Inter,Arial,sans-serif!important;font-size:32px;font-weight:800;letter-spacing:-1.4px;line-height:1.12;color:#57142c}
+.cb-logo small {font-family:Inter,Arial,sans-serif;font-size:7px;font-weight:700;letter-spacing:1.1px;line-height:1.5;margin:6px 0 0;color:#73515e;white-space:nowrap}
+.cb-rail .cb-logo>span {font-size:24px;letter-spacing:-1px}
+.cb-rail .cb-logo img {width:34px;height:34px}
+.cb-rail .cb-logo small {font-size:5px;letter-spacing:.45px;margin-left:0}
+.cb-free-signup {display:flex;align-items:center;gap:10px;width:fit-content;background:#fce5eb;border:1px solid #f5bdcd;border-radius:999px;padding:9px 15px;margin:0 0 22px;color:#8d173b;font-size:16px;font-weight:800;line-height:1.4}
+.cb-free-signup span {font-size:12px;font-weight:500;color:#73515e}
+@media(max-width:700px){
+ .cb-public-header .cb-logo>span,.cb-onb-aside .cb-logo>span {font-size:27px;letter-spacing:-1.2px}
+ .cb-public-header .cb-logo img,.cb-onb-aside .cb-logo img {width:38px;height:38px}
+ .cb-logo small {font-size:6px;letter-spacing:.6px;margin:5px 0 0}
+ .cb-app-top .cb-logo>span {font-size:25px;letter-spacing:-1px}
+ .cb-app-top .cb-logo img {width:32px;height:32px}
+}
+@media(max-width:420px){
+ .cb-public-header {gap:10px;padding-left:16px;padding-right:16px}
+ .cb-public-header .cb-logo {gap:6px}
+ .cb-public-header .cb-logo>span {font-size:23px;letter-spacing:-1px}
+ .cb-public-header .cb-logo img {width:32px;height:32px}
+ .cb-public-header .cb-logo small {font-size:5px;letter-spacing:.4px}
+ .cb-public-header nav {gap:12px;font-size:11px}
+}
