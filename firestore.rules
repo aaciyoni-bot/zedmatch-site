@@ -10,6 +10,15 @@ service cloud.firestore {
         && exists(/databases/$(database)/documents/chibwenziAdmins/$(request.auth.token.email))
         && get(/databases/$(database)/documents/chibwenziAdmins/$(request.auth.token.email)).data.enabled == true;
     }
+    function cbOwner() { return cbAdmin() && request.auth.token.email == 'aaci.yoni@gmail.com'; }
+    function directoryProfile(userId) {
+      let p = getAfter(/databases/$(database)/documents/profiles/$(userId)).data;
+      return {'name': p.get('name', ''), 'age': p.get('age', 0), 'gender': p.get('gender', ''),
+        'city': p.get('city', ''), 'verified': p.get('verified', false),
+        'moderationStatus': p.get('moderationStatus', 'active'),
+        'createdAt': p.get('createdAt', null), 'complete': p.get('name', '') != '' && p.get('age', 0) >= 18 && p.get('gender', '') != ''
+          && p.get('city', '') != '' && p.get('bio', '') != '' && p.get('photos', []).size() > 0};
+    }
     function available(userId) {
       return !exists(/databases/$(database)/documents/chibwenziModeration/$(userId))
         || get(/databases/$(database)/documents/chibwenziModeration/$(userId)).data.status == 'active';
@@ -34,11 +43,13 @@ service cloud.firestore {
 
     // Private contact information; never readable by other members.
     match /chibwenziContacts/{userId} {
-      allow get, delete: if signedIn() && userId == uid();
+      allow get: if cbOwner() || (signedIn() && userId == uid());
+      allow delete: if signedIn() && userId == uid();
       allow list: if false;
       allow create, update: if signedIn() && userId == uid()
         && request.auth.token.firebase.sign_in_provider != 'anonymous'
-        && request.resource.data.keys().hasOnly(['phone', 'updatedAt'])
+        && request.resource.data.keys().hasOnly(['phone', 'email', 'updatedAt'])
+        && (!request.resource.data.keys().hasAny(['email']) || request.resource.data.email == request.auth.token.get('email', ''))
         && request.resource.data.phone is string
         && request.resource.data.phone.matches('^[+]260[79][0-9]{8}$')
         && request.resource.data.updatedAt == request.time;
@@ -50,23 +61,27 @@ service cloud.firestore {
     // number are never stored here (only city). NOTE (pilot): verified/premium
     // verified is protected; premium remains a separate payment-hardening task.
     match /profiles/{userId} {
-      allow read: if signedIn();
+      allow read: if cbOwner() || (signedIn() && !cbAdmin());
       allow create: if signedIn() && userId == uid() && request.resource.data.age >= 18
         && request.resource.data.get('verified', false) == false
-        && !request.resource.data.keys().hasAny(['moderationStatus', 'moderationAuditId', 'verificationAuditId']);
+        && request.resource.data.get('verifyStatus', 'none') in ['none','pending']
+        && !request.resource.data.keys().hasAny(['moderationStatus', 'moderationAuditId', 'verificationAuditId'])
+        && (!request.resource.data.keys().hasAny(['createdAt']) || request.resource.data.createdAt == request.time);
       allow update: if (signedIn() && userId == uid() && request.resource.data.age >= 18
-        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['verified', 'moderationStatus', 'moderationAuditId', 'verificationAuditId']))
+        && (request.resource.data.get('verifyStatus','none') == resource.data.get('verifyStatus','none') || request.resource.data.get('verifyStatus','none') in ['none','pending'])
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['verified', 'moderationStatus', 'moderationAuditId', 'verificationAuditId', 'createdAt']))
         || (cbAdmin() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['moderationStatus','moderationAuditId'])
           && request.resource.data.moderationStatus in ['active','suspended','banned']
           && audited(request.resource.data.moderationAuditId, userId, 'account-status')
           && getAfter(/databases/$(database)/documents/chibwenziModeration/$(userId)).data.status == request.resource.data.moderationStatus)
-        || (cbAdmin() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['verified','verificationAuditId'])
+        || (cbAdmin() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['verified','verifyStatus','verificationAuditId'])
           && request.resource.data.verified is bool
+          && request.resource.data.get('verifyStatus', request.resource.data.verified ? 'approved' : 'rejected') == (request.resource.data.verified ? 'approved' : 'rejected')
           && audited(request.resource.data.verificationAuditId,
              getAfter(/databases/$(database)/documents/chibwenziAudit/$(request.resource.data.verificationAuditId)).data.target, 'verification-status')
           && getAfter(/databases/$(database)/documents/verifications/$(getAfter(/databases/$(database)/documents/chibwenziAudit/$(request.resource.data.verificationAuditId)).data.target)).data.userId == userId
           && (getAfter(/databases/$(database)/documents/verifications/$(getAfter(/databases/$(database)/documents/chibwenziAudit/$(request.resource.data.verificationAuditId)).data.target)).data.status == 'approved') == request.resource.data.verified);
-      allow delete: if isAdmin() || (signedIn() && userId == uid());
+      allow delete: if (cbAdmin() && audited(getAfter(/databases/$(database)/documents/chibwenziProfileDeletion/$(userId)).data.auditId,userId,'profile-delete')) || (signedIn() && userId == uid());
     }
 
     // ---- swipes (likes / passes) ----
@@ -85,7 +100,7 @@ service cloud.firestore {
     // create the match only if the OTHER user has already liked them (a
     // reciprocal swipe exists) — this is the mutual-like check, enforced server-side.
     match /matches/{matchId} {
-      allow read: if cbAdmin() || (signedIn() && uid() in resource.data.users);
+      allow read: if cbOwner() || (signedIn() && !cbAdmin() && uid() in resource.data.users);
       allow create: if signedIn()
                     && request.resource.data.users.size() == 2
                     && uid() in request.resource.data.users && available(otherUser())
@@ -100,8 +115,8 @@ service cloud.firestore {
     // Only between matched users. Sender must be the author and a participant,
     // and an existing match doc must list them both.
     match /messages/{msgId} {
-      allow read: if (signedIn() && uid() in resource.data.participants)
-        || (cbAdmin() && exists(/databases/$(database)/documents/chibwenziCases/$(resource.data.matchId))
+      allow read: if (signedIn() && !cbAdmin() && uid() in resource.data.participants)
+        || (cbOwner() && exists(/databases/$(database)/documents/chibwenziCases/$(resource.data.matchId))
           && get(/databases/$(database)/documents/chibwenziCases/$(resource.data.matchId)).data.actor == uid());
       allow create: if signedIn()
                     && request.resource.data.from == uid()
@@ -126,7 +141,7 @@ service cloud.firestore {
           || (uid() in get(/databases/$(database)/documents/matches/$(request.resource.data.matchId)).data.users
             && request.resource.data.targetId in get(/databases/$(database)/documents/matches/$(request.resource.data.matchId)).data.users
             && request.resource.data.targetId != uid()));
-      allow read: if cbAdmin();
+      allow read: if cbOwner();
       allow update: if cbAdmin() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','resolvedBy','resolvedAt','auditId'])
         && request.resource.data.status in ['resolved','dismissed'] && request.resource.data.resolvedBy == uid()
         && request.resource.data.resolvedAt == request.time && audited(request.resource.data.auditId, reportId, 'report-status');
@@ -134,10 +149,57 @@ service cloud.firestore {
     }
     match /verifications/{verifId} {
       allow create: if signedIn() && request.resource.data.userId == uid();
-      allow read: if cbAdmin();
+      allow read: if cbOwner();
       allow update: if cbAdmin() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','resolvedBy','resolvedAt','auditId'])
         && request.resource.data.status in ['approved','rejected'] && request.resource.data.resolvedBy == uid()
         && request.resource.data.resolvedAt == request.time && audited(request.resource.data.auditId, verifId, 'verification-status');
+      allow delete: if cbOwner() && existsAfter(/databases/$(database)/documents/chibwenziDeletion/$(verifId))
+        && audited(getAfter(/databases/$(database)/documents/chibwenziDeletion/$(verifId)).data.auditId, verifId, 'verification-delete');
+    }
+    match /chibwenziProfileDeletion/{userId} {
+      allow read: if cbAdmin();
+      allow create, update: if cbAdmin() && request.resource.data.keys().hasOnly(['auditId'])
+        && audited(request.resource.data.auditId,userId,'profile-delete')
+        && !existsAfter(/databases/$(database)/documents/profiles/$(userId));
+      allow delete: if false;
+    }
+    match /chibwenziDeletion/{recordId} {
+      allow read: if cbOwner();
+      allow create: if cbOwner() && request.resource.data.keys().hasOnly(['auditId'])
+        && audited(request.resource.data.auditId, recordId, 'verification-delete')
+        && !existsAfter(/databases/$(database)/documents/verifications/$(recordId));
+      allow update, delete: if false;
+    }
+    match /chibwenziReportDirectory/{reportId} {
+      allow read: if cbAdmin();
+      allow create, update: if (cbAdmin() || (signedIn()
+        && getAfter(/databases/$(database)/documents/reports/$(reportId)).data.by == uid()))
+        && request.resource.data == {
+          'by': getAfter(/databases/$(database)/documents/reports/$(reportId)).data.by,
+          'targetId': getAfter(/databases/$(database)/documents/reports/$(reportId)).data.targetId,
+          'status': getAfter(/databases/$(database)/documents/reports/$(reportId)).data.status,
+          'at': getAfter(/databases/$(database)/documents/reports/$(reportId)).data.get('at',0)};
+      allow delete: if false;
+    }
+    // Redacted operations directory. No photos, phone, email, biography or contact fields.
+    match /chibwenziDirectory/{userId} {
+      allow read: if cbAdmin() || (signedIn() && uid() == userId);
+      allow create, update: if (cbAdmin() || (signedIn() && uid() == userId))
+        && request.resource.data == directoryProfile(userId);
+      allow delete: if (cbAdmin() || (signedIn() && uid() == userId))
+        && !existsAfter(/databases/$(database)/documents/profiles/$(userId));
+    }
+    match /chibwenziActivity/{userId} {
+      allow read: if cbAdmin() || (signedIn() && uid() == userId);
+      allow create: if signedIn() && uid() == userId
+        && request.resource.data.keys().hasOnly(['firstSeenAt','lastActiveAt','lastLoginAt'])
+        && request.resource.data.firstSeenAt == request.time
+        && request.resource.data.lastActiveAt == request.time
+        && (request.resource.data.lastLoginAt == null || request.resource.data.lastLoginAt == request.time);
+      allow update: if signedIn() && uid() == userId
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastActiveAt','lastLoginAt'])
+        && request.resource.data.lastActiveAt == request.time
+        && (request.resource.data.lastLoginAt == resource.data.lastLoginAt || request.resource.data.lastLoginAt == request.time);
       allow delete: if false;
     }
     // Only a trusted Firebase project operator may grant or revoke roles.
@@ -147,7 +209,7 @@ service cloud.firestore {
       allow list, create, update, delete: if false;
     }
     match /chibwenziAudit/{auditId} {
-      allow read: if cbAdmin();
+      allow read: if cbOwner() || (cbAdmin() && resource.data.actor == uid());
       allow create: if cbAdmin() && request.resource.data.actor == uid() && request.resource.data.at == request.time
         && request.resource.data.reason is string && request.resource.data.reason.size() > 0
         && request.resource.data.reason.size() <= 1000;
@@ -162,12 +224,10 @@ service cloud.firestore {
       allow delete: if false;
     }
     match /chibwenziCases/{matchId} {
-      allow read: if cbAdmin();
-      allow create, update: if cbAdmin() && request.resource.data.actor == uid() && request.resource.data.at == request.time
-        && get(/databases/$(database)/documents/reports/$(request.resource.data.reportId)).data.matchId == matchId
-        && get(/databases/$(database)/documents/reports/$(request.resource.data.reportId)).data.by in get(/databases/$(database)/documents/matches/$(matchId)).data.users
-        && get(/databases/$(database)/documents/reports/$(request.resource.data.reportId)).data.targetId in get(/databases/$(database)/documents/matches/$(matchId)).data.users
-        && get(/databases/$(database)/documents/reports/$(request.resource.data.reportId)).data.by != get(/databases/$(database)/documents/reports/$(request.resource.data.reportId)).data.targetId
+      allow read: if cbOwner();
+      allow create, update: if cbOwner() && request.resource.data.actor == uid() && request.resource.data.at == request.time
+        && request.resource.data.keys().hasOnly(['actor','at','auditId','reportId'])
+        && exists(/databases/$(database)/documents/matches/$(matchId))
         && audited(request.resource.data.auditId, matchId, 'conversation-review');
       allow delete: if false;
     }
