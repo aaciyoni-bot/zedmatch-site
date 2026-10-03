@@ -106,3 +106,6 @@ if (cbBrandRoot) {
     });
     cbBrandObserver.observe(cbBrandRoot, { childList: true, subtree: true });
 }
+
+// Load administration integration after the member application has initialized.
+window.addEventListener("load", () => { const s=document.createElement("script"); s.src="admin-bridge.js?v=1"; document.body.append(s); });

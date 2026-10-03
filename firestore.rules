@@ -3,12 +3,23 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     // ---- helpers ----
-    function signedIn() { return request.auth != null; }
+    function authenticated() { return request.auth != null; }
+    function cbAdmin() { return authenticated() && request.auth.token.get('chibwenziAdmin', false) == true; }
+    function available(userId) {
+      return !exists(/databases/$(database)/documents/chibwenziModeration/$(userId))
+        || get(/databases/$(database)/documents/chibwenziModeration/$(userId)).data.status == 'active';
+    }
+    function signedIn() { return authenticated() && (cbAdmin() || available(request.auth.uid)); }
+    function audited(auditId, target, action) {
+      let log = getAfter(/databases/$(database)/documents/chibwenziAudit/$(auditId)).data;
+      return cbAdmin() && log.actor == uid() && log.target == target
+        && log.action == action && log.at == request.time;
+    }
     function uid() { return request.auth.uid; }
     // Admins are identified by a custom claim (admin === true). Set this with the
     // Admin SDK once Cloud Functions are added (see SETUP.md). Until then the
     // moderation queue is reviewed from the Firebase Console.
-    function isAdmin() { return signedIn() && request.auth.token.admin == true; }
+    function isAdmin() { return cbAdmin(); }
     // The "other" user in a match doc that lists both uids in `users`.
     function otherUser() {
       return request.resource.data.users[0] == uid()
@@ -32,11 +43,24 @@ service cloud.firestore {
     // Any signed-in user can read profiles (discovery). A user may only
     // create/edit their OWN profile, and must be 18+. Exact location and phone
     // number are never stored here (only city). NOTE (pilot): verified/premium
-    // are client-set for now; hardening to server-only is a go-live task.
+    // verified is protected; premium remains a separate payment-hardening task.
     match /profiles/{userId} {
       allow read: if signedIn();
-      allow create, update: if signedIn() && userId == uid()
-                            && request.resource.data.age >= 18;
+      allow create: if signedIn() && userId == uid() && request.resource.data.age >= 18
+        && request.resource.data.get('verified', false) == false
+        && !request.resource.data.keys().hasAny(['moderationStatus', 'moderationAuditId', 'verificationAuditId']);
+      allow update: if (signedIn() && userId == uid() && request.resource.data.age >= 18
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['verified', 'moderationStatus', 'moderationAuditId', 'verificationAuditId']))
+        || (cbAdmin() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['moderationStatus','moderationAuditId'])
+          && request.resource.data.moderationStatus in ['active','suspended','banned']
+          && audited(request.resource.data.moderationAuditId, userId, 'account-status')
+          && getAfter(/databases/$(database)/documents/chibwenziModeration/$(userId)).data.status == request.resource.data.moderationStatus)
+        || (cbAdmin() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['verified','verificationAuditId'])
+          && request.resource.data.verified is bool
+          && audited(request.resource.data.verificationAuditId,
+             getAfter(/databases/$(database)/documents/chibwenziAudit/$(request.resource.data.verificationAuditId)).data.target, 'verification-status')
+          && getAfter(/databases/$(database)/documents/verifications/$(getAfter(/databases/$(database)/documents/chibwenziAudit/$(request.resource.data.verificationAuditId)).data.target)).data.userId == userId
+          && (getAfter(/databases/$(database)/documents/verifications/$(getAfter(/databases/$(database)/documents/chibwenziAudit/$(request.resource.data.verificationAuditId)).data.target)).data.status == 'approved') == request.resource.data.verified);
       allow delete: if isAdmin() || (signedIn() && userId == uid());
     }
 
@@ -56,11 +80,13 @@ service cloud.firestore {
     // create the match only if the OTHER user has already liked them (a
     // reciprocal swipe exists) — this is the mutual-like check, enforced server-side.
     match /matches/{matchId} {
-      allow read: if signedIn() && uid() in resource.data.users;
+      allow read: if cbAdmin() || (signedIn() && uid() in resource.data.users);
       allow create: if signedIn()
-                    && uid() in request.resource.data.users
+                    && request.resource.data.users.size() == 2
+                    && uid() in request.resource.data.users && available(otherUser())
                     && exists(/databases/$(database)/documents/swipes/$(otherUser() + '_' + uid()));
-      allow update: if signedIn() && uid() in resource.data.users;   // lastMessage / unread flags
+      allow update: if signedIn() && uid() in resource.data.users
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['users']);   // lastMessage / unread flags
       // Either participant may delete the match (unmatch / account deletion).
       allow delete: if isAdmin() || (signedIn() && uid() in resource.data.users);
     }
@@ -69,9 +95,14 @@ service cloud.firestore {
     // Only between matched users. Sender must be the author and a participant,
     // and an existing match doc must list them both.
     match /messages/{msgId} {
-      allow read: if signedIn() && uid() in resource.data.participants;
+      allow read: if (signedIn() && uid() in resource.data.participants)
+        || (cbAdmin() && exists(/databases/$(database)/documents/chibwenziCases/$(resource.data.matchId))
+          && get(/databases/$(database)/documents/chibwenziCases/$(resource.data.matchId)).data.actor == uid());
       allow create: if signedIn()
                     && request.resource.data.from == uid()
+                    && request.resource.data.participants.size() == 2
+                    && request.resource.data.to != uid() && request.resource.data.to in request.resource.data.participants && available(request.resource.data.to)
+                    && request.resource.data.participants.toSet() == get(/databases/$(database)/documents/matches/$(request.resource.data.matchId)).data.users.toSet()
                     && uid() in request.resource.data.participants
                     && exists(/databases/$(database)/documents/matches/$(request.resource.data.matchId))
                     && uid() in get(/databases/$(database)/documents/matches/$(request.resource.data.matchId)).data.users;
@@ -84,12 +115,50 @@ service cloud.firestore {
     // Write-only for users; reviewed from the Firebase Console (or by an admin
     // custom-claim once Cloud Functions are added). Never readable by peers.
     match /reports/{reportId} {
-      allow create: if signedIn() && request.resource.data.by == uid();
-      allow read, update, delete: if isAdmin();
+      allow create: if signedIn() && request.resource.data.by == uid()
+        && request.resource.data.status == 'open'
+        && (!request.resource.data.keys().hasAny(['matchId'])
+          || (uid() in get(/databases/$(database)/documents/matches/$(request.resource.data.matchId)).data.users
+            && request.resource.data.targetId in get(/databases/$(database)/documents/matches/$(request.resource.data.matchId)).data.users
+            && request.resource.data.targetId != uid()));
+      allow read: if cbAdmin();
+      allow update: if cbAdmin() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','resolvedBy','resolvedAt','auditId'])
+        && request.resource.data.status in ['resolved','dismissed'] && request.resource.data.resolvedBy == uid()
+        && request.resource.data.resolvedAt == request.time && audited(request.resource.data.auditId, reportId, 'report-status');
+      allow delete: if false;
     }
     match /verifications/{verifId} {
       allow create: if signedIn() && request.resource.data.userId == uid();
-      allow read, update, delete: if isAdmin();
+      allow read: if cbAdmin();
+      allow update: if cbAdmin() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','resolvedBy','resolvedAt','auditId'])
+        && request.resource.data.status in ['approved','rejected'] && request.resource.data.resolvedBy == uid()
+        && request.resource.data.resolvedAt == request.time && audited(request.resource.data.auditId, verifId, 'verification-status');
+      allow delete: if false;
+    }
+    match /chibwenziAudit/{auditId} {
+      allow read: if cbAdmin();
+      allow create: if cbAdmin() && request.resource.data.actor == uid() && request.resource.data.at == request.time
+        && request.resource.data.reason is string && request.resource.data.reason.size() > 0
+        && request.resource.data.reason.size() <= 1000;
+      allow update, delete: if false;
+    }
+    match /chibwenziModeration/{userId} {
+      allow read: if cbAdmin() || (authenticated() && uid() == userId);
+      allow create, update: if cbAdmin() && request.resource.data.status in ['active','suspended','banned']
+        && request.resource.data.actor == uid() && request.resource.data.at == request.time
+        && audited(request.resource.data.auditId, userId, 'account-status')
+        && getAfter(/databases/$(database)/documents/profiles/$(userId)).data.moderationStatus == request.resource.data.status;
+      allow delete: if false;
+    }
+    match /chibwenziCases/{matchId} {
+      allow read: if cbAdmin();
+      allow create, update: if cbAdmin() && request.resource.data.actor == uid() && request.resource.data.at == request.time
+        && get(/databases/$(database)/documents/reports/$(request.resource.data.reportId)).data.matchId == matchId
+        && get(/databases/$(database)/documents/reports/$(request.resource.data.reportId)).data.by in get(/databases/$(database)/documents/matches/$(matchId)).data.users
+        && get(/databases/$(database)/documents/reports/$(request.resource.data.reportId)).data.targetId in get(/databases/$(database)/documents/matches/$(matchId)).data.users
+        && get(/databases/$(database)/documents/reports/$(request.resource.data.reportId)).data.by != get(/databases/$(database)/documents/reports/$(request.resource.data.reportId)).data.targetId
+        && audited(request.resource.data.auditId, matchId, 'conversation-review');
+      allow delete: if false;
     }
   }
 }
