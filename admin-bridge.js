@@ -15,6 +15,6 @@ fbLoadPool=async function(){
   }catch(e){return [];}
 };
 // Do not assume that a trusted email address is an administrator role.
-const timer=setInterval(()=>{if(attached){clearInterval(timer);return;}if(typeof FB==='undefined'||!FB.auth||!FB.authMod)return;attached=true;FB.authMod.onIdTokenChanged(FB.auth,async user=>{try{role=Boolean(user&&(await user.getIdTokenResult()).claims.chibwenziAdmin===true);}catch(e){role=false;}});},500);
+const timer=setInterval(()=>{if(attached){clearInterval(timer);return;}if(typeof FB==='undefined'||!FB.auth||!FB.authMod)return;attached=true;FB.authMod.onIdTokenChanged(FB.auth,async user=>{try{role=false;if(user?.email&&user.emailVerified){const result=await FB.fs.getDocFromServer(FB.fs.doc(FB.db,'chibwenziAdmins',user.email));role=result.exists()&&result.data().enabled===true;}}catch(e){role=false;}});},500);
 setTimeout(()=>clearInterval(timer),60000);
 })();

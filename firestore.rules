@@ -4,7 +4,12 @@ service cloud.firestore {
 
     // ---- helpers ----
     function authenticated() { return request.auth != null; }
-    function cbAdmin() { return authenticated() && request.auth.token.get('chibwenziAdmin', false) == true; }
+    function cbAdmin() {
+      return authenticated() && request.auth.token.get('email_verified', false) == true
+        && request.auth.token.get('email', '') != ''
+        && exists(/databases/$(database)/documents/chibwenziAdmins/$(request.auth.token.email))
+        && get(/databases/$(database)/documents/chibwenziAdmins/$(request.auth.token.email)).data.enabled == true;
+    }
     function available(userId) {
       return !exists(/databases/$(database)/documents/chibwenziModeration/$(userId))
         || get(/databases/$(database)/documents/chibwenziModeration/$(userId)).data.status == 'active';
@@ -134,6 +139,12 @@ service cloud.firestore {
         && request.resource.data.status in ['approved','rejected'] && request.resource.data.resolvedBy == uid()
         && request.resource.data.resolvedAt == request.time && audited(request.resource.data.auditId, verifId, 'verification-status');
       allow delete: if false;
+    }
+    // Only a trusted Firebase project operator may grant or revoke roles.
+    match /chibwenziAdmins/{email} {
+      allow get: if authenticated() && request.auth.token.get('email_verified', false) == true
+        && request.auth.token.get('email', '') == email;
+      allow list, create, update, delete: if false;
     }
     match /chibwenziAudit/{auditId} {
       allow read: if cbAdmin();

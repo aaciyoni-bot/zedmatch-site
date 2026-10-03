@@ -108,4 +108,4 @@ if (cbBrandRoot) {
 }
 
 // Load administration integration after the member application has initialized.
-window.addEventListener("load", () => { const s=document.createElement("script"); s.src="admin-bridge.js?v=1"; document.body.append(s); });
+window.addEventListener("load", () => { const s=document.createElement("script"); s.src="admin-bridge.js?v=2"; document.body.append(s); });
