@@ -1,5 +1,5 @@
 /* Chibwenzi service worker - enables app installation and basic offline shell */
-const CACHE = 'chibwenzi-brand-20261003-v6';
+const CACHE = 'chibwenzi-brand-20261003-v7';
 // Version presentation assets so returning members receive the current brand.
 function brandRequest(request) {
     const url = new URL(request.url);
@@ -35,6 +35,11 @@ self.addEventListener('fetch', e => {
     if (e.request.method !== 'GET') return;
     const url = new URL(e.request.url);
     if (url.origin !== location.origin) return; // API, Firebase and CDNs go straight to network
+    // Never serve administration or its private configuration from an offline cache.
+    if (/\/admin\.(html|js|css)$/.test(url.pathname) || (url.pathname.endsWith('/index.html') && e.request.cache === 'no-store')) {
+        e.respondWith(fetch(e.request, {cache: 'no-store'}));
+        return;
+    }
     e.respondWith(
         fetch(brandRequest(e.request))
             .then(res => {
