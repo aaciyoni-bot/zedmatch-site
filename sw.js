@@ -1,10 +1,10 @@
 /* Chibwenzi service worker - enables app installation and basic offline shell */
-const CACHE = 'chibwenzi-brand-20261003-v5';
+const CACHE = 'chibwenzi-brand-20261003-v6';
 // Version presentation assets so returning members receive the current brand.
 function brandRequest(request) {
     const url = new URL(request.url);
     if (/\/(future-studio\.(css|js)|icon\.svg|apple-touch-icon\.png|icon-(192|512)\.png)$/.test(url.pathname) || /\/assets\/chibwenzi-(mark|icon)/.test(url.pathname)) {
-        url.searchParams.set('cb-brand', '20261003-v5');
+        url.searchParams.set('cb-brand', '20261003-v6');
         return new Request(url, request);
     }
     return request;
