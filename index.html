@@ -351,6 +351,7 @@ async function fbInit() {
         FB.uid = user.uid;
         FB.email = user.email || null;
         FB.on = true;
+        fbTrackActivity(user);
         return true;
     } catch (e) {
         console.warn('Firebase unavailable → DEMO mode:', e && e.message);
@@ -445,6 +446,7 @@ async function fbAcceptAuthenticatedUser(user) {
     FB.uid = user.uid;
     FB.email = user.email || null;
     FB.on = true;
+    fbTrackActivity(user,true);
     fbGoogleStatus('Signed in. Loading your profile…', true);
     const existing = await fbLoadProfile(true);
     if (existing) me = Object.assign(freshUser(), me || {}, existing, { id: FB.uid, ageConfirmed: existing.age >= CONFIG.MIN_AGE, agreedTerms: true });
@@ -453,6 +455,21 @@ async function fbAcceptAuthenticatedUser(user) {
     if (uidChanged) fbListenMatches();
 }
 
+// Operations telemetry contains no contact data or photos. Historical login time
+// is recorded only after an explicit sign-in. A restored session is activity, not a login.
+async function fbTrackActivity(user,login=false){
+    if(!user||user.isAnonymous||!FB.on)return;
+    try{const ref=FB.fs.doc(FB.db,'chibwenziActivity',user.uid);
+      await FB.fs.runTransaction(FB.db,async t=>{const snap=await t.get(ref);
+        const data={lastActiveAt:FB.fs.serverTimestamp()};
+        if(login)data.lastLoginAt=FB.fs.serverTimestamp();
+        if(!snap.exists()){data.firstSeenAt=FB.fs.serverTimestamp();if(!login)data.lastLoginAt=null;}
+        t.set(ref,data,{merge:true});});
+    }catch(e){console.warn('Activity tracking unavailable');}
+}
+let cbLastActivity=0;
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&Date.now()-cbLastActivity>300000){cbLastActivity=Date.now();fbTrackActivity(FB.auth?.currentUser);}});
+for(const event of ['pointerdown','keydown'])document.addEventListener(event,()=>{if(Date.now()-cbLastActivity>300000){cbLastActivity=Date.now();fbTrackActivity(FB.auth?.currentUser);}},{passive:true});
 // Contact data is deliberately never copied into me, localStorage or profiles.
 let contactReadyUid = null;
 let registrationBusy = false;
@@ -545,7 +562,7 @@ async function saveRegistrationPhone(event) {
     registrationBusy = true;
     registrationMessage('Saving your private contact details…');
     try {
-        await FB.fs.setDoc(FB.fs.doc(FB.db, 'chibwenziContacts', user.uid), {phone, updatedAt: FB.fs.serverTimestamp()});
+        await FB.fs.setDoc(FB.fs.doc(FB.db, 'chibwenziContacts', user.uid), {phone, email: user.email||'', updatedAt: FB.fs.serverTimestamp()});
         if (FB.auth.currentUser?.uid !== user.uid) return;
         contactReadyUid = user.uid;
         resumeRegistration();
@@ -598,11 +615,22 @@ async function fbSaveProfile() {
         // fail the whole save (the profile matters more than the 6th picture).
         let photos = (me.photos || []).slice();
         while (photos.length > 1 && photosBytes(photos) > PHOTO_BUDGET) photos.pop();
-        await setDoc(doc(FB.db, 'profiles', FB.uid), {
-            id: FB.uid, name: me.name, age: me.age, gender: me.gender, seeking: me.seeking,
-            city: me.city, bio: me.bio || '', interests: me.interests || [], photos,
-            verified: !!me.verified, verifyStatus: me.verifyStatus || 'none', active: true, updatedAt: Date.now()
-        }, { merge: true });
+        const profileRef=doc(FB.db,'profiles',FB.uid);
+        await FB.fs.runTransaction(FB.db,async transaction=>{
+            const existing=await transaction.get(profileRef);
+            const profile={id:FB.uid,name:me.name,age:me.age,gender:me.gender,seeking:me.seeking,
+              city:me.city,bio:me.bio||'',interests:me.interests||[],photos,
+              verified:!!me.verified,verifyStatus:me.verifyStatus||'none',active:true,updatedAt:Date.now()};
+            if(!existing.exists())profile.createdAt=FB.fs.serverTimestamp();
+            const merged={...(existing.exists()?existing.data():{}),...profile};
+            transaction.set(profileRef,profile,{merge:true});
+            transaction.set(doc(FB.db,'chibwenziDirectory',FB.uid),{
+              name:merged.name||'',age:merged.age||0,gender:merged.gender||'',city:merged.city||'',
+              verified:!!merged.verified,moderationStatus:merged.moderationStatus||'active',
+              complete:!!(merged.name&&merged.age>=18&&merged.gender&&merged.city&&merged.bio&&merged.photos?.length),
+              createdAt:merged.createdAt||null
+            });
+        });
     } catch (e) { console.warn('fbSaveProfile', e && e.message); }
 }
 
@@ -725,7 +753,7 @@ async function fbDeleteAccount() {
         const msgs = await getDocs(query(collection(FB.db, 'messages'), where('participants', 'array-contains', FB.uid)));
         for (const d of msgs.docs) if (d.data().from === FB.uid) await del(d.ref);
         // the profile itself
-        await del(doc(FB.db, 'profiles', FB.uid));
+        const profileDeletion=FB.fs.writeBatch(FB.db);profileDeletion.delete(doc(FB.db,'profiles',FB.uid));profileDeletion.delete(doc(FB.db,'chibwenziDirectory',FB.uid));await profileDeletion.commit();
         // finally the auth user (best-effort: may need a recent sign-in)
         try { await FB.auth.currentUser.delete(); } catch (e) {}
         return true;
