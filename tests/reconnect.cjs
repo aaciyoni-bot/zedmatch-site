@@ -17,5 +17,10 @@ const err=code=>Object.assign(new Error(code),{code});
  t=setup([]);await assert.rejects(t.c.cbWithDeadline(new Promise(()=>{}),5),{code:'deadline-exceeded'});
  assert(html.includes('if (FIREBASE_ON && !FB.on) return renderConnectionError'));
  assert(!html.includes("onclick=\"boot()\">Try again</button></main>'"));
+ // Exercise the actual Google callback, not only its shared read helper.
+ const googleSource=html.slice(html.indexOf('async function fbSignInWithGoogle'),html.indexOf('async function fbAcceptAuthenticatedUser'));
+ const googleError=err('permission-denied');let shown=null,toasts=[];
+ const g={fbGoogleBusy:false,registrationBusy:false,FB:{auth:{currentUser:null},authMod:{GoogleAuthProvider:class{setCustomParameters(){}},signInWithPopup:async()=>({user:{uid:'member'}})}},fbGoogleStatus(){},showToast:m=>toasts.push(m),fbAcceptAuthenticatedUser:async()=>{throw googleError},renderConnectionError:e=>{shown=e},console:{warn(){}},document:{querySelectorAll:()=>[]}};
+ vm.createContext(g);vm.runInContext(googleSource,g);await g.fbSignInWithGoogle();assert.equal(shown,googleError);assert.equal(g.fbGoogleBusy,false);assert.equal(toasts.length,0);
  console.log('PASS transient retry, permission refresh/rejection, missing document, offline behavior, account isolation, bounded timeout, no production demo fallback');
 })();

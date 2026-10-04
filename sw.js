@@ -1,5 +1,5 @@
 /* Chibwenzi service worker - enables app installation and basic offline shell */
-const CACHE = 'chibwenzi-reconnect-20261004-v8';
+const CACHE = 'chibwenzi-signin-recovery-20261004-v9';
 // Version presentation assets so returning members receive the current brand.
 function brandRequest(request) {
     const url = new URL(request.url);

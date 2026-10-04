@@ -423,10 +423,12 @@ async function fbSignInWithGoogle(linkProfile = true) {
     } catch (error) {
         // Log only the error code, never the OAuth response or credentials.
         console.warn('Google sign-in:', error && error.code || 'unknown');
-        const message = authenticated
-            ? 'Google sign-in succeeded, but your profile could not load. Please reload to try again. Your saved profile has not been changed.'
-            : fbGoogleErrorMessage(error);
-        fbGoogleStatus(message); showToast(message, 9000);
+        if (authenticated) {
+            renderConnectionError(error);
+        } else {
+            const message = fbGoogleErrorMessage(error);
+            fbGoogleStatus(message); showToast(message, 9000);
+        }
     } finally {
         fbGoogleBusy = false;
         document.querySelectorAll('[data-google-signin]').forEach(button => {
@@ -591,7 +593,9 @@ async function submitEmailRegistration(event, mode) {
         await fbAcceptAuthenticatedUser(credential.user);
         await loadRegistrationContact();
     } catch (error) {
-        registrationMessage(authenticated ? 'Signed in, but your profile could not load. Reload to retry safely.' : registrationError(error));
+        console.warn('Email sign-in:', error?.code || 'unknown');
+        if (authenticated) renderConnectionError(error);
+        else registrationMessage(registrationError(error));
     } finally { registrationBusy = false; }
 }
 async function resetRegistrationPassword() {
