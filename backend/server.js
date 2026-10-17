@@ -107,4 +107,5 @@ app.get('/api/pay/status', async (req, res) => {
     }
 });
 
+require('./referrals').install(app);
 module.exports = app;

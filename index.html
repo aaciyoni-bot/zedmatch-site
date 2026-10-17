@@ -636,6 +636,7 @@ async function fbSaveProfile() {
               createdAt:merged.createdAt||null
             });
         });
+        refreshReferrals();
     } catch (e) { console.warn('fbSaveProfile', e && e.message); }
 }
 
@@ -1269,6 +1270,7 @@ function cbNavItems() {
     ].map(([id,icon,label]) => `<button type="button" class="cb-nav-item ${activeTab===id?'active':''}" ${activeTab===id?'aria-current="page"':''} onclick="switchTab('${id}')"><i class="fas fa-${icon}" aria-hidden="true"></i><span>${label}</span>${id==='matches'&&matches.length?`<b>${matches.length}</b>`:''}</button>`).join('');
 }
 function renderHome() {
+    refreshReferrals();
     if (!registrationComplete()) return renderRegistration();
     if (!pool.length && activeTab === 'discover') buildPool();
     app.className = 'cb-app cb-authenticated';
@@ -1402,11 +1404,13 @@ function swipeBtn(action) {
     doSwipe(card, action);
 }
 function doSwipe(card, action) {
+    if(creditLikeBusy)return;
     // Free-swipe gate applies to right-swipes (like / super)
     if ((action==='like'||action==='super') && !hasPremium()) {
         if (me.swipesToday >= CONFIG.FREE_SWIPES_PER_DAY) {
             // revert card position
             renderDeck();
+            if(action==='like' && card._real && referralState.enabled && referralState.uid===FB.uid && referralState.balance>0)return useBonusLike(card);
             return openPaywall('swipes');
         }
     }
@@ -1432,8 +1436,82 @@ function doSwipe(card, action) {
     const matched = (action==='like'||action==='super') && card.likesYou;
     setTimeout(() => { finishUI(); if (matched) showMatch(card); }, 260);
 }
+// Referral bonuses are server-owned; never persist or increment them locally.
+let referralState = {uid:null,enabled:false,balance:0,code:null}, referralBusy=false;
+try {
+    const incoming = new URL(location.href).searchParams.get('invite');
+    if (/^[a-f0-9]{36}$/.test(incoming||'') && (!localStorage.getItem('cb_pending_invite') || Date.now()-JSON.parse(localStorage.getItem('cb_pending_invite')).at>=7*86400000))
+        localStorage.setItem('cb_pending_invite', JSON.stringify({code:incoming,at:Date.now()}));
+} catch (_) {}
+async function referralRequest(path,body) {
+    const user=FB.auth?.currentUser;
+    if(!user||user.isAnonymous)throw new Error('SIGN_IN_REQUIRED');
+    const token=await user.getIdToken();
+    const response=await fetch(CONFIG.API_BASE_URL+'/api/referrals/'+path,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},body:JSON.stringify(body||{}),signal:AbortSignal.timeout(15000)});
+    const data=await response.json();
+    if(FB.auth.currentUser?.uid!==user.uid)throw new Error('ACCOUNT_CHANGED');
+    if(!response.ok)throw new Error(data.error||'SERVICE_UNAVAILABLE');return data;
+}
+async function refreshReferrals() {
+    if(referralBusy||!registrationComplete())return;
+    referralBusy=true;
+    const uid=FB.auth.currentUser.uid;
+    if(referralState.uid!==uid)referralState={uid,enabled:false,balance:0,code:null};
+    try {
+        const response=await fetch(CONFIG.API_BASE_URL+'/api/referrals/config',{signal:AbortSignal.timeout(10000)});
+        if(!response.ok||!(await response.json()).enabled){referralState.enabled=false;return;}
+        referralState.enabled=true;
+        let pending;try{pending=JSON.parse(localStorage.getItem('cb_pending_invite'));}catch(_){}
+        if(pending && Date.now()-pending.at<7*86400000){
+            try{const result=await referralRequest('claim',{code:pending.code});
+                if(['rewarded','already_claimed'].includes(result.status))localStorage.removeItem('cb_pending_invite');
+                if(result.status==='rewarded')showToast('Welcome! 3 bonus credits added to your account.');
+            }catch(e){if(['INVALID_INVITE','NEW_ACCOUNTS_ONLY','ALREADY_REWARDED'].includes(e.message))localStorage.removeItem('cb_pending_invite');}
+        }
+        const data=await referralRequest('invite');
+        if(FB.auth.currentUser?.uid===uid)referralState={uid,enabled:true,...data};
+    }catch(_){/* No bonus promises or local credits when the service is unavailable. */}
+    finally{referralBusy=false;}
+}
+function referralError(error){
+    return ({VERIFY_EMAIL:'Verify your email address before earning bonus credits.',COMPLETE_PROFILE:'Complete your profile and private phone number first.',NO_CREDITS:'No bonus credits remain.',TARGET_UNAVAILABLE:'This profile is no longer available.',ALREADY_LIKED:'You have already liked this person.'})[error.message]||'Bonus credits are temporarily unavailable. Please try again.';
+}
+async function openReferrals(){
+    await refreshReferrals();
+    if(!referralState.enabled||referralState.uid!==FB.uid)return showToast('Invitations are not available yet. Please try again later.');
+    if(!referralState.code) {
+        if(!FB.auth.currentUser.emailVerified){
+            if(confirm('Verify your email to earn invitation credits. Send a verification email now?')){
+                try{await FB.authMod.sendEmailVerification(FB.auth.currentUser);showToast('Verification email sent. After verifying, sign in again.');}catch(_){showToast('Could not send verification email. Please try again later.');}
+            }
+        }else showToast('Complete your profile and private phone number, then try again.');
+        return;
+    }
+    document.getElementById('cb-referral-dialog')?.remove();
+    const dialog=document.createElement('dialog');dialog.id='cb-referral-dialog';
+    dialog.style.cssText='border:0;border-radius:24px;padding:28px;max-width:440px;width:calc(100% - 32px);color:#401727;background:#fffaf5';
+    const url='https://chibwenzi.com/?invite='+referralState.code;
+    dialog.innerHTML=`<h2 style="font-size:28px;margin:0 0 12px">Good company deserves a little extra.</h2><p><b>${referralState.balance} bonus credits</b> · 1 credit = 1 extra like after your daily free likes.</p><p>Earn <b>5 credits</b> when a new friend joins with your link and completes their profile. They get <b>3 credits</b> too.</p><p>Up to 25 invitation credits a day, Zambia time. Bonus credits do not expire. Verified email and a completed profile with a private phone number are required. One reward per eligible new account; no self-invitations. Join and complete your profile within 7 days. If the inviter reaches their daily limit, return the next day within that window.</p><a class="cb-primary" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent('Join me on Chibwenzi! Complete your profile to receive 3 bonus credits. '+url)}">Share on WhatsApp</a><button class="cb-text-button" id="cb-copy-invite">Copy invitation link</button><p id="cb-invite-feedback" role="status"></p><button class="cb-text-button" id="cb-close-invite">Close</button>`;
+    document.body.appendChild(dialog);dialog.showModal();
+    dialog.querySelector('#cb-close-invite').onclick=()=>{dialog.close();dialog.remove();};
+    dialog.querySelector('#cb-copy-invite').onclick=async()=>{try{await navigator.clipboard.writeText(url);dialog.querySelector('#cb-invite-feedback').textContent='Link copied.';}catch(_){dialog.querySelector('#cb-invite-feedback').textContent=url;}};
+}
+let creditLikeBusy=false;
+async function useBonusLike(card){
+    if(creditLikeBusy)return;
+    creditLikeBusy=true;
+    try{
+        const result=await referralRequest('like',{target:card.id});
+        if(!me||me.id!==FB.uid)return;
+        referralState.balance=result.balance;me.likedIds.push(card.id);saveMe();deckIndex++;
+        renderDiscover($('screen'));if(result.matched)showMatch(card);
+    }catch(error){renderDeck();showToast(referralError(error));}
+    finally{creditLikeBusy=false;}
+}
+
 // Growth loop: the empty deck is the best moment to ask for an invite.
 function shareInvite() {
+    if(referralState.enabled && referralState.uid===FB.uid)return openReferrals();
     const text = 'Join me on Chibwenzi — Zambia\'s own dating app 💚';
     const url = 'https://chibwenzi.com';
     if (navigator.share) {
@@ -1626,6 +1704,7 @@ function renderProfile(s) {
             <button onclick="logout()" class="w-full flex items-center gap-3 px-4 py-3.5 bg-white rounded-xl text-left"><i class="fas fa-right-from-bracket text-ink-soft w-5"></i><span class="font-semibold text-sm">Log out</span></button>
             <button onclick="confirmDeleteAccount()" class="w-full flex items-center gap-3 px-4 py-3.5 bg-white rounded-xl text-left text-red-600"><i class="fas fa-trash-can w-5"></i><span class="font-semibold text-sm">Delete my account</span></button>
         </div>
+        ${referralState.enabled && referralState.uid===FB.uid ? `<button type="button" onclick="openReferrals()" class="w-full mt-4 rounded-2xl p-4 bg-plum text-white text-left"><b>Invite friends · earn bonus credits</b><br><span>${referralState.balance} credits available · 5 for you, 3 for your friend</span></button>` : ''}
         <!-- Legal documents stay next to account controls. -->
         <div class="mt-7 px-5 text-center">
             <div class="flex flex-wrap justify-center gap-x-4 gap-y-1.5 text-[11px]" style="color:var(--ink-mute)">
