@@ -4,7 +4,14 @@ const clock=Date.UTC(2026,9,17,12);let time=clock;
 const docs=new Map(),users=new Map();let queue=Promise.resolve();
 const profile={name:'Test',age:25,gender:'f',city:'Ndola',bio:'Testing',photos:['photo']};
 function snapshot(key){const value=docs.get(key);return {exists:docs.has(key),data:()=>value};}
-const db={collection:c=>({doc:id=>({key:c+'/'+id,get:async()=>snapshot(c+'/'+id)})}),runTransaction:fn=>{const next=queue.then(async()=>{const writes=[];const result=await fn({get:async r=>snapshot(r.key),set:(r,v,o)=>writes.push(()=>docs.set(r.key,o?.merge?{...docs.get(r.key),...v}:v)),create:(r,v)=>{assert(!docs.has(r.key));writes.push(()=>docs.set(r.key,v));}});writes.forEach(w=>w());return result;});queue=next.catch(()=>{});return next;}};
+const docRef=key=>({key,get:async()=>snapshot(key),set:async v=>docs.set(key,v),delete:async()=>docs.delete(key)});
+const db={batch:()=>{const pending=[];return{delete:r=>pending.push(r.key),commit:async()=>pending.forEach(k=>docs.delete(k))}},collection:c=>({
+ doc:id=>docRef(c+'/'+id),
+ where:(field,op,uid)=>({limit:n=>({get:async()=>{
+  const found=[...docs].filter(([k,v])=>k.startsWith(c+'/')&&v[field]===uid).slice(0,n);
+  return {empty:!found.length,size:found.length,docs:found.map(([key])=>({ref:docRef(key)}))};
+ }})})
+}),runTransaction:fn=>{const next=queue.then(async()=>{const writes=[];const result=await fn({get:async r=>snapshot(r.key),set:(r,v,o)=>writes.push(()=>docs.set(r.key,o?.merge?{...docs.get(r.key),...v}:v)),create:(r,v)=>{assert(!docs.has(r.key));writes.push(()=>docs.set(r.key,v));}});writes.forEach(w=>w());return result;});queue=next.catch(()=>{});return next;}};
 function add(uid,n){docs.set('profiles/'+uid,{...profile});docs.set('chibwenziContacts/'+uid,{phone:'+26097'+String(n).padStart(7,'0'),email:uid+'@example.test'});users.set(uid,{email:uid+'@example.test',emailVerified:true,metadata:{creationTime:new Date(clock+1000).toISOString()}});}
 const api=service(db,{getUser:async uid=>users.get(uid)},()=>time);
 (async()=>{
@@ -25,5 +32,6 @@ const api=service(db,{getUser:async uid=>users.get(uid)},()=>time);
  add('blocked',31);docs.set('chibwenziModeration/blocked',{status:'suspended'});await assert.rejects(api.spend('a','blocked'),/TARGET_UNAVAILABLE/);assert.equal(await api.wallet('a'),2);
  add('zero',32);await assert.rejects(api.spend('zero','target'),/NO_CREDITS/);assert(!docs.has('swipes/zero_target'));
  assert.equal(day(Date.UTC(2026,9,17,21,59)),day(Date.UTC(2026,9,17,0)));assert.notEqual(day(Date.UTC(2026,9,17,22)),day(Date.UTC(2026,9,17,0)));
- console.log('PASS stable private invite, duplicate claims, self invite, old accounts, verified email, duplicate phone, profile completion, daily cap, Zambia rollover, persistent balance, atomic credit like/match, idempotent retry, suspension, zero balance');
+ await api.erase('a');assert.equal(await api.wallet('a'),0);assert(!docs.has('chibwenziReferralClaims/a'));assert(![...docs].some(([k,v])=>k.startsWith('chibwenziReferralIdentities/')&&v.uid==='a'));await assert.rejects(api.invite('a'),/ACCOUNT_UNAVAILABLE/);await api.erase('a');
+ console.log('PASS cleanup and issuance lock; stable private invite, duplicate claims, self invite, old accounts, verified email, duplicate phone, profile completion, daily cap, Zambia rollover, persistent balance, atomic credit like/match, idempotent retry, suspension, zero balance');
 })().catch(e=>{console.error(e);process.exitCode=1});

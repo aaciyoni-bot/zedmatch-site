@@ -747,6 +747,9 @@ async function fbDeleteAccount() {
     const { doc, deleteDoc, collection, query, where, getDocs } = FB.fs;
     const del = async (ref) => { try { await deleteDoc(ref); } catch (e) {} };
     try {
+        const referralConfig=await fetch(CONFIG.API_BASE_URL+'/api/referrals/config',{signal:AbortSignal.timeout(10000)});
+        if(!referralConfig.ok)throw new Error('Account deletion service unavailable');
+        if((await referralConfig.json()).deletionAvailable)await referralRequest('delete');
         await deleteDoc(doc(FB.db, 'chibwenziContacts', FB.uid));
         // swipes I made
         const mine = await getDocs(query(collection(FB.db, 'swipes'), where('by', '==', FB.uid)));
@@ -782,7 +785,7 @@ function confirmDeleteAccount() {
 async function doDeleteAccount(btn) {
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner inline-block !w-4 !h-4 !border-2 align-middle mr-2"></span> Deleting…';
-    await fbDeleteAccount();
+    if(!await fbDeleteAccount()){btn.disabled=false;btn.textContent='Try deleting again';showToast('Account deletion could not finish. Please retry or contact support.');return;}
     localStorage.clear();
     document.querySelectorAll('.fixed').forEach(x => x.remove());
     me = null; matches = []; pool = []; likersCache = null; activeTab = 'discover'; onbStep = 0;

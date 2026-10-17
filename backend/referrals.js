@@ -18,7 +18,7 @@ function service(db,auth,now=Date.now){
  async function wallet(uid){return (await ref('chibwenziWallets',uid).get()).data()?.balance||0;}
  async function invite(uid){
   await member(uid);const owner=ref('chibwenziInviteOwners',uid);
-  const code=await db.runTransaction(async t=>{const s=await t.get(owner);if(s.exists)return s.data().code;
+  const code=await db.runTransaction(async t=>{const [s,closed]=await Promise.all([t.get(owner),t.get(ref('chibwenziReferralClosed',uid))]);if(closed.exists)fail('ACCOUNT_UNAVAILABLE',403);if(s.exists)return s.data().code;
    const code=randomBytes(18).toString('hex');t.create(ref('chibwenziInviteCodes',code),{uid,createdAt:now()});t.create(owner,{code});return code;});
   return {code,balance:await wallet(uid),inviterReward:5,newMemberReward:3,dailyLimit:25};
  }
@@ -32,6 +32,7 @@ function service(db,auth,now=Date.now){
    if(previous.exists)return {status:'already_claimed'};
    if(!inv.exists||inv.data().uid===uid)fail('INVALID_INVITE');
    const host=inv.data().uid;
+   const closed=await Promise.all([t.get(ref('chibwenziReferralClosed',uid)),t.get(ref('chibwenziReferralClosed',host))]);if(closed.some(s=>s.exists))fail('ACCOUNT_UNAVAILABLE',403);
    if(created<inv.data().createdAt||now()-created>7*86400000)fail('NEW_ACCOUNTS_ONLY');
    const keys=[ref('chibwenziReferralIdentities',hash('email:'+emailKey(newcomer.user.email))),ref('chibwenziReferralIdentities',hash('phone:'+newcomer.phone))];
    const hWallet=ref('chibwenziWallets',host),nWallet=ref('chibwenziWallets',uid),daily=ref('chibwenziReferralDays',host+'_'+day(now()));
@@ -40,7 +41,7 @@ function service(db,auth,now=Date.now){
    if(hc.data()?.phone===newcomer.phone||(hc.data()?.email ? emailKey(hc.data().email) : '')===emailKey(newcomer.user.email)||identities.some(x=>x.exists))fail('ALREADY_REWARDED');
    if((count.data()?.credits||0)>=25)fail('DAILY_LIMIT');
    t.set(hWallet,{balance:(hw.data()?.balance||0)+5},{merge:true});t.set(nWallet,{balance:(nw.data()?.balance||0)+3},{merge:true});
-   t.set(daily,{credits:(count.data()?.credits||0)+5});t.create(claimRef,{inviter:host,at:now(),inviterCredits:5,newMemberCredits:3});
+   t.set(daily,{uid:host,credits:(count.data()?.credits||0)+5});t.create(claimRef,{inviter:host,at:now(),inviterCredits:5,newMemberCredits:3});
    keys.forEach(r=>t.create(r,{uid,at:now()}));return {status:'rewarded',credits:3};
   });
  }
@@ -50,24 +51,39 @@ function service(db,auth,now=Date.now){
   return db.runTransaction(async t=>{
    const w=ref('chibwenziWallets',uid),op=ref('chibwenziCreditLikes',hash(uid+':'+target)),swipe=ref('swipes',uid+'_'+target);
    const [old,bal,p,m,own,reciprocal,priorSwipe]=await Promise.all([t.get(op),t.get(w),t.get(ref('profiles',target)),t.get(ref('chibwenziModeration',target)),t.get(ref('profiles',uid)),t.get(ref('swipes',target+'_'+uid)),t.get(swipe)]);
+   const closed=await t.get(ref('chibwenziReferralClosed',uid));if(closed.exists)fail('ACCOUNT_UNAVAILABLE',403);
    if(old.exists)return old.data();
    if(!complete(p.data())||!active(m.data())||own.data()?.blockedIds?.includes(target)||p.data()?.blockedIds?.includes(uid))fail('TARGET_UNAVAILABLE');
    if(['like','super'].includes(priorSwipe.data()?.action))fail('ALREADY_LIKED');
    const balance=bal.data()?.balance||0;if(balance<1)fail('NO_CREDITS');
    const matched=['like','super'].includes(reciprocal.data()?.action);const result={balance:balance-1,matched};
-   t.set(w,{balance:balance-1},{merge:true});t.create(op,result);t.set(swipe,{by:uid,target,action:'like',at:now()});
+   t.set(w,{balance:balance-1},{merge:true});t.create(op,{...result,uid,target});t.set(swipe,{by:uid,target,action:'like',at:now()});
    if(matched){const users=[uid,target].sort(),brief=x=>({name:x.name,city:x.city,photo:x.photos[0]});t.set(ref('matches',users.join('_')),{users,at:now(),profiles:{[uid]:brief(own.data()),[target]:brief(p.data())}},{merge:true});}
    return result;
   });
  }
- return {invite,claim,spend,wallet};
+ async function erase(uid){
+  // Lock issuance before cleanup; in-flight transactions read this document and retry.
+  await ref('chibwenziReferralClosed',uid).set({closed:true});
+  const owner=await ref('chibwenziInviteOwners',uid).get();
+  const direct=[ref('chibwenziWallets',uid),ref('chibwenziInviteOwners',uid),ref('chibwenziReferralClaims',uid)];
+  if(owner.exists)direct.push(ref('chibwenziInviteCodes',owner.data().code));
+  await Promise.all(direct.map(r=>r.delete()));
+  for(const [collection,field] of [['chibwenziInviteCodes','uid'],['chibwenziReferralClaims','inviter'],['chibwenziReferralIdentities','uid'],['chibwenziReferralDays','uid'],['chibwenziCreditLikes','uid'],['chibwenziCreditLikes','target']]){
+   let snap;
+   do{snap=await db.collection(collection).where(field,'==',uid).limit(300).get();if(snap.empty)break;const batch=db.batch();snap.docs.forEach(d=>batch.delete(d.ref));await batch.commit();}while(snap.size===300);
+  }
+  // Minimal closed-UID marker prevents a still-valid session recreating deleted ledgers.
+  return {deleted:true};
+ }
+ return {invite,claim,spend,wallet,erase};
 }
 function install(app){
  let api,admin;
  const enabled=()=>process.env.CHIBWENZI_REFERRALS_ENABLED==='true'&&!!process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
- app.get('/api/referrals/config',(_,res)=>res.json({enabled:enabled()}));
+ app.get('/api/referrals/config',(_,res)=>res.json({enabled:enabled(),deletionAvailable:!!process.env.FIREBASE_SERVICE_ACCOUNT_JSON}));
  app.use('/api/referrals',async(req,res,next)=>{
-  if(!enabled())return res.status(503).json({error:'REFERRALS_UNAVAILABLE'});
+  if(!enabled() && !(req.path==='/delete'&&process.env.FIREBASE_SERVICE_ACCOUNT_JSON))return res.status(503).json({error:'REFERRALS_UNAVAILABLE'});
   try{
    if(!api){admin=require('firebase-admin');const credentials=JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);if(credentials.project_id!=='rummikube-b2188')throw Error('WRONG_PROJECT');
     const a=admin.initializeApp({credential:admin.credential.cert(credentials)},'chibwenzi-referrals');api=service(a.firestore(),a.auth());}
@@ -79,6 +95,7 @@ function install(app){
  const route=fn=>async(req,res)=>{try{res.json(await fn(req));}catch(e){console.warn('referral request',e.status?e.message:'service-error');res.status(e.status||503).json({error:e.status?e.message:'SERVICE_UNAVAILABLE'});}};
  app.post('/api/referrals/invite',route(r=>api.invite(r.memberUid)));
  app.post('/api/referrals/claim',route(r=>api.claim(r.memberUid,r.body?.code)));
+ app.post('/api/referrals/delete',route(r=>api.erase(r.memberUid)));
  app.post('/api/referrals/like',route(r=>api.spend(r.memberUid,r.body?.target)));
 }
 module.exports={service,install,day,complete};

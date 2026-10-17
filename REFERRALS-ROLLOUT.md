@@ -22,7 +22,7 @@ Target Vercel project `chibwenzi-backend`, team `team_3Frj9vLrc498NxWi4booX0ib`;
 6. Merge frontend and privacy notice, deploy backend production, set `CHIBWENZI_REFERRALS_ENABLED=true`, redeploy. Confirm config + a real authorized flow, then promote/announce. Existing registration incident must be verified resolved.
 
 ## Privacy and deletion work before activation
-New server-only collections store invitation relationships, balances, daily totals, transaction dedupe and hashed email/phone identifiers. These hashes remain personal data. Public code is opaque; referrer receives no recipient contact details. Implement and validate deletion/retention handling for the new collections with the existing account deletion flow; do not claim existing client deletion removes them. Final policy disclosure and retention decision are required before activation.
+New server-only collections store invitation relationships, balances, daily totals, transaction dedupe and hashed email/phone identifiers. These hashes remain personal data. Public code is opaque; referrer receives no recipient contact details. The authenticated delete endpoint closes issuance, deletes referral records and hashed identities, and removes the wallet/invite code before the client deletes its profile. A minimal closed UID marker remains to prevent reissuance by a still-valid session. Privacy disclosure is included. Validate cleanup against live staging before activation; no production deletions have been performed.
 
 ## Validation performed
 `node backend/referrals.test.js`, `node tests/reconnect.cjs`, `node tests/registration.cjs`, inline script syntax and `git diff --check`.
