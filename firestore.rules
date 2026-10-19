@@ -10,7 +10,7 @@ service cloud.firestore {
         && exists(/databases/$(database)/documents/chibwenziAdmins/$(request.auth.token.email))
         && get(/databases/$(database)/documents/chibwenziAdmins/$(request.auth.token.email)).data.enabled == true;
     }
-    function cbOwner() { return cbAdmin() && request.auth.token.email == 'aaci.yoni@gmail.com'; }
+    function cbOwner() { return cbAdmin() && (request.auth.token.email == 'aaci.yoni@gmail.com' || get(/databases/$(database)/documents/chibwenziAdmins/$(request.auth.token.email)).data.get('fullAccess', false) == true); }
     function directoryProfile(userId) {
       let p = getAfter(/databases/$(database)/documents/profiles/$(userId)).data;
       return {'name': p.get('name', ''), 'age': p.get('age', 0), 'gender': p.get('gender', ''),
@@ -200,6 +200,19 @@ service cloud.firestore {
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastActiveAt','lastLoginAt'])
         && request.resource.data.lastActiveAt == request.time
         && (request.resource.data.lastLoginAt == resource.data.lastLoginAt || request.resource.data.lastLoginAt == request.time);
+      allow delete: if false;
+    }
+    match /chibwenziPromoterStats/{agent} {
+      allow read: if cbAdmin();
+      allow write: if false;
+    }
+    match /chibwenziPromoters/{agent} {
+      allow read: if cbAdmin();
+      allow create, update: if cbAdmin() && agent.matches('([1-9]|[1-9][0-9]|100)')
+        && request.resource.data.keys().hasOnly(['name','notes','updatedBy','updatedAt'])
+        && request.resource.data.name is string && request.resource.data.name.size() <= 120
+        && request.resource.data.notes is string && request.resource.data.notes.size() <= 1000
+        && request.resource.data.updatedBy == uid() && request.resource.data.updatedAt == request.time;
       allow delete: if false;
     }
     // Only a trusted Firebase project operator may grant or revoke roles.
