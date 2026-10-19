@@ -1446,6 +1446,15 @@ try {
     if (/^[a-f0-9]{36}$/.test(incoming||'') && (!localStorage.getItem('cb_pending_invite') || Date.now()-JSON.parse(localStorage.getItem('cb_pending_invite')).at>=7*86400000))
         localStorage.setItem('cb_pending_invite', JSON.stringify({code:incoming,at:Date.now()}));
 } catch (_) {}
+// First valid promoter visit wins for seven days. The server signs attribution time.
+(async function capturePromoter(){
+ try{
+  const raw=new URL(location.href).searchParams.get('agent');if(!/^(?:[1-9]|[1-9][0-9]|100)$/.test(raw||''))return;
+  const old=JSON.parse(localStorage.getItem('cb_promoter')||'null');if(old&&Date.now()-old.at<7*86400000)return;
+  const response=await fetch(CONFIG.API_BASE_URL+'/api/referrals/promoter-visit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({agent:Number(raw)}),signal:AbortSignal.timeout(10000)});
+  if(response.ok){const data=await response.json();localStorage.setItem('cb_promoter',JSON.stringify({ticket:data.ticket,at:Date.now()}));}
+ }catch(_){}
+})();
 async function referralRequest(path,body) {
     const user=FB.auth?.currentUser;
     if(!user||user.isAnonymous)throw new Error('SIGN_IN_REQUIRED');
@@ -1464,6 +1473,13 @@ async function refreshReferrals() {
         const response=await fetch(CONFIG.API_BASE_URL+'/api/referrals/config',{signal:AbortSignal.timeout(10000)});
         if(!response.ok||!(await response.json()).enabled){referralState.enabled=false;return;}
         referralState.enabled=true;
+        try{
+            const promoter=JSON.parse(localStorage.getItem('cb_promoter')||'null');
+            if(promoter&&Date.now()-promoter.at<7*86400000){
+                const result=await referralRequest('promoter-claim',{ticket:promoter.ticket});
+                if(['counted','already_counted'].includes(result.status))localStorage.removeItem('cb_promoter');
+            }
+        }catch(e){if(['NEW_ACCOUNTS_ONLY','ALREADY_COUNTED','INVALID_AGENT_TICKET'].includes(e.message))localStorage.removeItem('cb_promoter');}
         let pending;try{pending=JSON.parse(localStorage.getItem('cb_pending_invite'));}catch(_){}
         if(pending && Date.now()-pending.at<7*86400000){
             try{const result=await referralRequest('claim',{code:pending.code});

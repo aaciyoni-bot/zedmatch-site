@@ -66,22 +66,43 @@ function service(db,auth,now=Date.now){
   // Lock issuance before cleanup; in-flight transactions read this document and retry.
   await ref('chibwenziReferralClosed',uid).set({closed:true});
   const owner=await ref('chibwenziInviteOwners',uid).get();
-  const direct=[ref('chibwenziWallets',uid),ref('chibwenziInviteOwners',uid),ref('chibwenziReferralClaims',uid)];
+  const direct=[ref('chibwenziWallets',uid),ref('chibwenziInviteOwners',uid),ref('chibwenziReferralClaims',uid),ref('chibwenziPromoterClaims',uid)];
   if(owner.exists)direct.push(ref('chibwenziInviteCodes',owner.data().code));
   await Promise.all(direct.map(r=>r.delete()));
-  for(const [collection,field] of [['chibwenziInviteCodes','uid'],['chibwenziReferralClaims','inviter'],['chibwenziReferralIdentities','uid'],['chibwenziReferralDays','uid'],['chibwenziCreditLikes','uid'],['chibwenziCreditLikes','target']]){
+  for(const [collection,field] of [['chibwenziInviteCodes','uid'],['chibwenziReferralClaims','inviter'],['chibwenziReferralIdentities','uid'],['chibwenziReferralDays','uid'],['chibwenziCreditLikes','uid'],['chibwenziCreditLikes','target'],['chibwenziPromoterIdentities','uid']]){
    let snap;
    do{snap=await db.collection(collection).where(field,'==',uid).limit(300).get();if(snap.empty)break;const batch=db.batch();snap.docs.forEach(d=>batch.delete(d.ref));await batch.commit();}while(snap.size===300);
   }
   // Minimal closed-UID marker prevents a still-valid session recreating deleted ledgers.
   return {deleted:true};
  }
- return {invite,claim,spend,wallet,erase};
+ async function promoterClaim(uid,agent,issuedAt){
+  if(!Number.isInteger(agent)||agent<1||agent>100)fail('INVALID_AGENT',400);
+  const memberInfo=await member(uid),created=Date.parse(memberInfo.user.metadata.creationTime);
+  if(!Number.isFinite(created)||created<issuedAt-1000||now()-issuedAt>7*86400000)fail('NEW_ACCOUNTS_ONLY');
+  return db.runTransaction(async t=>{
+   const attribution=ref('chibwenziPromoterClaims',uid),counter=ref('chibwenziPromoterStats',String(agent));
+   const identities=[ref('chibwenziPromoterIdentities',hash('email:'+emailKey(memberInfo.user.email))),ref('chibwenziPromoterIdentities',hash('phone:'+memberInfo.phone))];
+   const [prior,count,closed,...duplicates]=await Promise.all([t.get(attribution),t.get(counter),t.get(ref('chibwenziReferralClosed',uid)),...identities.map(r=>t.get(r))]);
+   if(closed.exists)fail('ACCOUNT_UNAVAILABLE',403);
+   if(prior.exists)return {status:'already_counted'};
+   if(duplicates.some(d=>d.exists))fail('ALREADY_COUNTED');
+   t.create(attribution,{agent,at:now()});identities.forEach(r=>t.create(r,{uid}));
+   t.set(counter,{completed:(count.data()?.completed||0)+1},{merge:true});return {status:'counted'};
+  });
+ }
+ return {invite,claim,spend,wallet,erase,promoterClaim};
 }
 function install(app){
  let api,admin;
+ const tickets=require('./promoter-tickets');
+ const ticketSecret=()=>process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
  const enabled=()=>process.env.CHIBWENZI_REFERRALS_ENABLED==='true'&&!!process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
  app.get('/api/referrals/config',(_,res)=>res.json({enabled:enabled(),deletionAvailable:!!process.env.FIREBASE_SERVICE_ACCOUNT_JSON}));
+ app.post('/api/referrals/promoter-visit',(req,res)=>{
+  if(!enabled())return res.status(503).json({error:'REFERRALS_UNAVAILABLE'});
+  try{res.json({ticket:tickets.issue(req.body?.agent,ticketSecret())});}catch(_){res.status(400).json({error:'INVALID_AGENT'});}
+ });
  app.use('/api/referrals',async(req,res,next)=>{
   if(!enabled() && !(req.path==='/delete'&&process.env.FIREBASE_SERVICE_ACCOUNT_JSON))return res.status(503).json({error:'REFERRALS_UNAVAILABLE'});
   try{
@@ -93,6 +114,7 @@ function install(app){
   }catch(e){console.warn('referral authentication',e.code||'unavailable');res.status(401).json({error:'SIGN_IN_REQUIRED'});}
  });
  const route=fn=>async(req,res)=>{try{res.json(await fn(req));}catch(e){console.warn('referral request',e.status?e.message:'service-error');res.status(e.status||503).json({error:e.status?e.message:'SERVICE_UNAVAILABLE'});}};
+ app.post('/api/referrals/promoter-claim',route(r=>{const ticket=tickets.verify(r.body?.ticket,ticketSecret());return api.promoterClaim(r.memberUid,ticket.agent,ticket.at);}));
  app.post('/api/referrals/invite',route(r=>api.invite(r.memberUid)));
  app.post('/api/referrals/claim',route(r=>api.claim(r.memberUid,r.body?.code)));
  app.post('/api/referrals/delete',route(r=>api.erase(r.memberUid)));
