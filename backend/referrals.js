@@ -65,8 +65,9 @@ function service(db,auth,now=Date.now){
  async function erase(uid){
   // Lock issuance before cleanup; in-flight transactions read this document and retry.
   await ref('chibwenziReferralClosed',uid).set({closed:true});
+  await promoters.erase(uid);
   const owner=await ref('chibwenziInviteOwners',uid).get();
-  const direct=[ref('chibwenziWallets',uid),ref('chibwenziInviteOwners',uid),ref('chibwenziReferralClaims',uid),ref('chibwenziPromoterClaims',uid)];
+  const direct=[ref('chibwenziWallets',uid),ref('chibwenziInviteOwners',uid),ref('chibwenziReferralClaims',uid)];
   if(owner.exists)direct.push(ref('chibwenziInviteCodes',owner.data().code));
   await Promise.all(direct.map(r=>r.delete()));
   for(const [collection,field] of [['chibwenziInviteCodes','uid'],['chibwenziReferralClaims','inviter'],['chibwenziReferralIdentities','uid'],['chibwenziReferralDays','uid'],['chibwenziCreditLikes','uid'],['chibwenziCreditLikes','target'],['chibwenziPromoterIdentities','uid']]){
@@ -76,22 +77,10 @@ function service(db,auth,now=Date.now){
   // Minimal closed-UID marker prevents a still-valid session recreating deleted ledgers.
   return {deleted:true};
  }
- async function promoterClaim(uid,agent,issuedAt){
-  if(!Number.isInteger(agent)||agent<1||agent>100)fail('INVALID_AGENT',400);
-  const memberInfo=await member(uid),created=Date.parse(memberInfo.user.metadata.creationTime);
-  if(!Number.isFinite(created)||created<issuedAt-1000||now()-issuedAt>7*86400000)fail('NEW_ACCOUNTS_ONLY');
-  return db.runTransaction(async t=>{
-   const attribution=ref('chibwenziPromoterClaims',uid),counter=ref('chibwenziPromoterStats',String(agent));
-   const identities=[ref('chibwenziPromoterIdentities',hash('email:'+emailKey(memberInfo.user.email))),ref('chibwenziPromoterIdentities',hash('phone:'+memberInfo.phone))];
-   const [prior,count,closed,...duplicates]=await Promise.all([t.get(attribution),t.get(counter),t.get(ref('chibwenziReferralClosed',uid)),...identities.map(r=>t.get(r))]);
-   if(closed.exists)fail('ACCOUNT_UNAVAILABLE',403);
-   if(prior.exists)return {status:'already_counted'};
-   if(duplicates.some(d=>d.exists))fail('ALREADY_COUNTED');
-   t.create(attribution,{agent,at:now()});identities.forEach(r=>t.create(r,{uid}));
-   t.set(counter,{completed:(count.data()?.completed||0)+1},{merge:true});return {status:'counted'};
-  });
- }
- return {invite,claim,spend,wallet,erase,promoterClaim};
+
+ const promoters=require('./promoters').service(db,auth,now);
+ const promoterClaim=promoters.track;
+ return {invite,claim,spend,wallet,erase,promoterClaim,promoters};
 }
 function install(app){
  let api,admin;
@@ -115,6 +104,11 @@ function install(app){
  });
  const route=fn=>async(req,res)=>{try{res.json(await fn(req));}catch(e){console.warn('referral request',e.status?e.message:'service-error');res.status(e.status||503).json({error:e.status?e.message:'SERVICE_UNAVAILABLE'});}};
  app.post('/api/referrals/promoter-claim',route(r=>{const ticket=tickets.verify(r.body?.ticket,ticketSecret());return api.promoterClaim(r.memberUid,ticket.agent,ticket.at);}));
+ app.post('/api/referrals/promoter-accounts',route(r=>api.promoters.accounts(r.memberUid)));
+ app.post('/api/referrals/promoter-manage',route(r=>api.promoters.manage(r.memberUid,r.body)));
+ app.post('/api/referrals/promoter-dashboard',route(r=>api.promoters.dashboard(r.memberUid)));
+ app.post('/api/referrals/promoter-reconcile',route(r=>api.promoters.reconcile(r.memberUid)));
+ app.post('/api/referrals/promoter-settle',route(async r=>{await api.promoters.admin(r.memberUid);if(typeof r.body?.uid!=='string'||!/^[-\w]{1,128}$/.test(r.body.uid))fail('INVALID_USER',400);return api.promoters.settle(r.body.uid);}));
  app.post('/api/referrals/invite',route(r=>api.invite(r.memberUid)));
  app.post('/api/referrals/claim',route(r=>api.claim(r.memberUid,r.body?.code)));
  app.post('/api/referrals/delete',route(r=>api.erase(r.memberUid)));

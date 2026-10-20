@@ -10,7 +10,7 @@ service cloud.firestore {
         && exists(/databases/$(database)/documents/chibwenziAdmins/$(request.auth.token.email))
         && get(/databases/$(database)/documents/chibwenziAdmins/$(request.auth.token.email)).data.enabled == true;
     }
-    function cbOwner() { return cbAdmin() && (request.auth.token.email == 'aaci.yoni@gmail.com' || get(/databases/$(database)/documents/chibwenziAdmins/$(request.auth.token.email)).data.get('fullAccess', false) == true); }
+    function cbOwner() { return cbAdmin() && (request.auth.token.email == 'aaci.yoni@gmail.com' || (request.auth.token.email == 'eltonmusakanya@gmail.com' && get(/databases/$(database)/documents/chibwenziAdmins/$(request.auth.token.email)).data.get('fullAccess', false) == true)); }
     function directoryProfile(userId) {
       let p = getAfter(/databases/$(database)/documents/profiles/$(userId)).data;
       return {'name': p.get('name', ''), 'age': p.get('age', 0), 'gender': p.get('gender', ''),
